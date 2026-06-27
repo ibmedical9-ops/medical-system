@@ -331,9 +331,10 @@ function filterMedications() {
     const medCity2 = pf(m,"city");
     const patProv = medCity2 || getPatientProvince(patId);
     const matchP  = !prov  || patProv === prov;
-    const availVal = pf(m,"availability");
+    const availVal   = pf(m,"availability");
+    const sponsVal   = pf(m,"Sponsorsed");
     const matchA  = !avail   || String(availVal) === avail;
-    const matchC  = !covered || String(availVal) === covered;
+    const matchC  = !covered || sponsVal === covered;
     return matchQ && matchP && matchA && matchC;
   });
   pages.medications = 1;
@@ -355,8 +356,8 @@ function renderMedications() {
     // Use medication's own city field first, then lookup from patient
     const medCity = pf(m,"city");
     const patProv = medCity || getPatientProvince(patId);
-    const covered = pf(m,"availability");
-    const avail   = pf(m,"availability");
+    const covered = pf(m,"Sponsorsed");   // نعم / لا
+    const avail   = pf(m,"availability"); // boolean
     const notes   = pf(m,"notes") || "—";
     const photoUrl= pf(m,"photo") || "";
     const row     = offset("medications") + i + 1;
@@ -368,7 +369,7 @@ function renderMedications() {
       <td>${price} د.ع</td>
       <td>${pat}</td>
       <td>${patProv}</td>
-      <td><span class="avail ${isAvail?'yes':'no'}">${isAvail?'✓':'✗'}</span></td>
+      <td>${covered==="نعم" ? '<span class="avail yes">✓</span>' : '<span class="avail no">✗</span>'}</td>
       <td><button class="pharm-avail-btn ${isAvail?'yes':'no'}" onclick="toggleAvailability('${m._id}',${isAvail})" title="تغيير التوفر">${isAvail?'✓':'✗'}</button></td>
       <td style="font-size:12px;color:#94a3b8;">${notes}</td>
       <td><div class="td-actions">
@@ -401,8 +402,9 @@ function renderMedGrouped() {
       const name    = pf(m,"Medication Name") || "—";
       const qty     = pf(m,"Dosage") || "—";
       const price   = pf(m,"price") || 0;
-      const avail   = pf(m,"availability");
-      const isAvail = avail===true||avail==="true";
+      const avail    = pf(m,"availability");
+      const isAvail  = avail===true||avail==="true";
+      const isCovered = pf(m,"Sponsorsed") === "نعم";
       const notes   = pf(m,"notes") || "—";
       const photoUrl= pf(m,"photo") || "";
       return `<tr>
@@ -411,7 +413,7 @@ function renderMedGrouped() {
         <td>${qty}</td>
         <td>${price} د.ع</td>
         <td style="font-size:12px;color:#64748b;">${notes}</td>
-        <td><span class="avail ${isAvail?'yes':'no'}">${isAvail?'✓':'✗'}</span></td>
+        <td>${isCovered ? '<span class="avail yes">✓</span>' : '<span class="avail no">✗</span>'}</td>
         <td><button class="pharm-avail-btn ${isAvail?'yes':'no'}" onclick="toggleAvailability('${m._id}',${isAvail})">${isAvail?'✓':'✗'}</button></td>
         <td>${photoUrl ? "<button class=\"btn btn-outline btn-sm btn-icon\" onclick=\"openPhoto(\'"+photoUrl+"\',\'"+name.replace(/'/g,"&apos;")+"\')\">🖼️</button>" : ""}</td>
       </tr>`;
@@ -575,7 +577,8 @@ async function saveMedication() {
       "Patient":          patId,
       "Medication Name":  name,
       "Dosage":           document.getElementById("nmed-qty").value,
-      "availability":     document.getElementById("nmed-covered").value === "true",
+      "Sponsorsed":       document.getElementById("nmed-covered").value === "true" ? "نعم" : "لا",
+      "availability":     false,
       "price":            parseFloat(document.getElementById("nmed-price").value) || 0,
       "notes":            document.getElementById("nmed-notes").value.trim(),
     });
@@ -760,13 +763,14 @@ function renderDetailMedications() {
   el.innerHTML = `<div class="table-wrap"><table>
     <thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية شهرياً</th><th>السعر</th><th>ضمن الكفالات</th><th>ملاحظات</th><th>إجراء</th></tr></thead>
     <tbody>${meds.map((m,i) => {
-      const avail = pf(m,"availability");
+      const avail    = pf(m,"availability");
+      const isCov    = pf(m,"Sponsorsed") === "نعم";
       return `<tr>
         <td>${i+1}</td>
         <td><strong>${pf(m,"Medication Name")||"—"}</strong></td>
         <td>${pf(m,"Dosage")||"—"}</td>
         <td style="font-size:12px;">${pf(m,"price")||0} د.ع</td>
-        <td><span class="avail ${avail===true||avail==="true"?"yes":"no"}">${avail===true||avail==="true"?"✓":"✗"}</span></td>
+        <td>${isCov ? '<span class="avail yes">✓</span>' : '<span class="avail no">✗</span>'}</td>
         <td style="font-size:12px;color:#94a3b8;">${pf(m,"notes")||"—"}</td>
         <td><div class="td-actions">
           ${pf(m,"photo") ? "<button class=\"btn btn-outline btn-sm btn-icon\" onclick=\"openPhoto(\'"+pf(m,"photo")+"\',\'"+String(pf(m,"Medication Name")||"").replace(/'/g,"&apos;")+"\')\">🖼️</button>" : ""}
@@ -874,7 +878,8 @@ async function saveDetailMedication() {
       "Patient":         currentPatientId,
       "Medication Name": name,
       "Dosage":          document.getElementById("dmed-dosage").value.trim(),
-      "availability":    document.getElementById("dmed-avail").value === "true",
+      "Sponsorsed":      document.getElementById("dmed-avail").value === "true" ? "نعم" : "لا",
+      "availability":    false,
       "price":           parseFloat(document.getElementById("dmed-price") ? document.getElementById("dmed-price").value : 0) || 0,
       "notes":           document.getElementById("dmed-mnotes").value.trim(),
     });
@@ -1305,7 +1310,8 @@ async function updateMedication() {
     "Medication Name": name,
     "Dosage":          document.getElementById("emed-dosage").value.trim(),
     "price":           parseFloat(document.getElementById("emed-price").value) || 0,
-    "availability":    document.getElementById("emed-avail").value === "true",
+    "Sponsorsed":      document.getElementById("emed-avail").value === "true" ? "نعم" : "لا",
+    "availability":    document.getElementById("emed-available").value === "true",
     "notes":           document.getElementById("emed-notes").value.trim(),
   };
   console.log("Updating medication:", id, JSON.stringify(data));
