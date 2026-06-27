@@ -361,7 +361,8 @@ function renderMedications() {
     const notes   = pf(m,"notes") || "—";
     const photoUrl= pf(m,"photo") || "";
     const row     = offset("medications") + i + 1;
-    const isAvail = avail===true || avail==="true";
+    const avail2  = pf(m,"availability 2");
+    const isAvail = avail===true || avail==="true" || avail2==="yes";
     return `<tr>
       <td>${row}</td>
       <td><strong>${name}</strong></td>
@@ -369,7 +370,6 @@ function renderMedications() {
       <td>${price} د.ع</td>
       <td>${pat}</td>
       <td>${patProv}</td>
-      <td>${covered==="نعم" ? '<span class="avail yes">✓</span>' : '<span class="avail no">✗</span>'}</td>
       <td><button class="pharm-avail-btn ${isAvail?'yes':'no'}" onclick="toggleAvailability('${m._id}',${isAvail})" title="تغيير التوفر">${isAvail?'✓':'✗'}</button></td>
       <td style="font-size:12px;color:#94a3b8;">${notes}</td>
       <td><div class="td-actions">
@@ -1333,10 +1333,16 @@ async function updateMedication() {
 async function toggleAvailability(id, currentVal) {
   const newVal = !(currentVal === true || currentVal === "true");
   try {
-    await bubbleUpdate("A - 03 Medications And Sponsorships", id, { "availability": newVal });
+    await bubbleUpdate("A - 03 Medications And Sponsorships", id, {
+      "availability":  newVal,
+      "availability 2": newVal ? "yes" : "no"
+    });
     // Update local state immediately for UI feedback
     const idx = S.medications.findIndex(x => x._id === id);
-    if (idx > -1) S.medications[idx]["availability"] = newVal;
+    if (idx > -1) {
+      S.medications[idx]["availability"] = newVal;
+      S.medications[idx]["availability 2"] = newVal ? "yes" : "no";
+    }
     filterMedications();
     if (currentPatientId) renderDetailMedications();
     showToast(newVal ? "✅ متوفر" : "❌ غير متوفر","success");
