@@ -361,8 +361,7 @@ function renderMedications() {
     const notes   = pf(m,"notes") || "—";
     const photoUrl= pf(m,"photo") || "";
     const row     = offset("medications") + i + 1;
-    const avail2  = pf(m,"availability 2");
-    const isAvail = avail===true || avail==="true" || avail2==="yes";
+    const isAvail = avail===true || avail==="true";
     return `<tr>
       <td>${row}</td>
       <td><strong>${name}</strong></td>
@@ -404,7 +403,6 @@ function renderMedGrouped() {
       const price   = pf(m,"price") || 0;
       const avail    = pf(m,"availability");
       const isAvail  = avail===true||avail==="true";
-      const isCovered = pf(m,"Sponsorsed") === "نعم";
       const notes   = pf(m,"notes") || "—";
       const photoUrl= pf(m,"photo") || "";
       return `<tr>
@@ -413,7 +411,6 @@ function renderMedGrouped() {
         <td>${qty}</td>
         <td>${price} د.ع</td>
         <td style="font-size:12px;color:#64748b;">${notes}</td>
-        <td>${isCovered ? '<span class="avail yes">✓</span>' : '<span class="avail no">✗</span>'}</td>
         <td><button class="pharm-avail-btn ${isAvail?'yes':'no'}" onclick="toggleAvailability('${m._id}',${isAvail})">${isAvail?'✓':'✗'}</button></td>
         <td>${photoUrl ? "<button class=\"btn btn-outline btn-sm btn-icon\" onclick=\"openPhoto(\'"+photoUrl+"\',\'"+name.replace(/'/g,"&apos;")+"\')\">🖼️</button>" : ""}</td>
       </tr>`;
@@ -425,7 +422,7 @@ function renderMedGrouped() {
       </div>
       <div class="table-wrap">
         <table style="min-width:500px;">
-          <thead><tr><th>#</th><th>الدواء</th><th>الكمية</th><th>السعر</th><th>ملاحظات</th><th>مكفول</th><th>التوفر</th><th>صورة</th></tr></thead>
+          <thead><tr><th>#</th><th>الدواء</th><th>الكمية</th><th>السعر</th><th>ملاحظات</th><th>توفر</th><th>صورة</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -761,16 +758,15 @@ function renderDetailMedications() {
   const meds = S.medications.filter(m => resolvePatientId(pf(m,"Patient")) === currentPatientId);
   if (!meds.length) { el.innerHTML = emptyDetail("لا توجد أدوية مسجلة"); return; }
   el.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية شهرياً</th><th>السعر</th><th>ضمن الكفالات</th><th>ملاحظات</th><th>إجراء</th></tr></thead>
+    <thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية شهرياً</th><th>السعر</th><th>توفر</th><th>ملاحظات</th><th>إجراء</th></tr></thead>
     <tbody>${meds.map((m,i) => {
       const avail    = pf(m,"availability");
-      const isCov    = pf(m,"Sponsorsed") === "نعم";
       return `<tr>
         <td>${i+1}</td>
         <td><strong>${pf(m,"Medication Name")||"—"}</strong></td>
         <td>${pf(m,"Dosage")||"—"}</td>
         <td style="font-size:12px;">${pf(m,"price")||0} د.ع</td>
-        <td>${isCov ? '<span class="avail yes">✓</span>' : '<span class="avail no">✗</span>'}</td>
+        <td><span class="avail ${(pf(m,"availability")===true||pf(m,"availability")==="true")?"yes":"no"}">${(pf(m,"availability")===true||pf(m,"availability")==="true")?"✓":"✗"}</span></td>
         <td style="font-size:12px;color:#94a3b8;">${pf(m,"notes")||"—"}</td>
         <td><div class="td-actions">
           ${pf(m,"photo") ? "<button class=\"btn btn-outline btn-sm btn-icon\" onclick=\"openPhoto(\'"+pf(m,"photo")+"\',\'"+String(pf(m,"Medication Name")||"").replace(/'/g,"&apos;")+"\')\">🖼️</button>" : ""}
@@ -1334,15 +1330,10 @@ async function toggleAvailability(id, currentVal) {
   const newVal = !(currentVal === true || currentVal === "true");
   try {
     await bubbleUpdate("A - 03 Medications And Sponsorships", id, {
-      "availability":  newVal,
-      "availability 2": newVal ? "yes" : "no"
+      "availability": newVal
     });
-    // Update local state immediately for UI feedback
     const idx = S.medications.findIndex(x => x._id === id);
-    if (idx > -1) {
-      S.medications[idx]["availability"] = newVal;
-      S.medications[idx]["availability 2"] = newVal ? "yes" : "no";
-    }
+    if (idx > -1) S.medications[idx]["availability"] = newVal;
     filterMedications();
     if (currentPatientId) renderDetailMedications();
     showToast(newVal ? "✅ متوفر" : "❌ غير متوفر","success");
