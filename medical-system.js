@@ -422,7 +422,7 @@ function renderMedGrouped() {
       </div>
       <div class="table-wrap">
         <table style="min-width:500px;">
-          <thead><tr><th>#</th><th>الدواء</th><th>الكمية</th><th>السعر</th><th>ملاحظات</th><th>توفر</th><th>صورة</th></tr></thead>
+          <thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية/شهر</th><th>السعر</th><th>ملاحظات</th><th>التوفر</th><th>صورة</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -1398,7 +1398,7 @@ function printMedicationsList() {
         <div style="background:#1a3a5c;color:#fff;padding:8px 12px;border-radius:6px;font-weight:700;margin-bottom:6px;">
           ${getPatientName(pid)} — ${getPatientProvince(pid)}
         </div>
-        <table style="width:100%"><thead><tr><th>#</th><th>الدواء</th><th>الكمية</th><th>السعر</th><th>التوفر</th><th>ملاحظات</th></tr></thead>
+        <table style="width:100%"><thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية/شهر</th><th>السعر</th><th>التوفر</th><th>ملاحظات</th></tr></thead>
         <tbody>${meds.map((m,i)=>`<tr><td>${i+1}</td><td>${pf(m,"Medication Name")||"—"}</td><td>${pf(m,"Dosage")||"—"}</td><td>${pf(m,"price")||0}</td><td>${pf(m,"availability")===true?"✅":"❌"}</td><td>${pf(m,"notes")||"—"}</td></tr>`).join("")}</tbody>
         </table>
       </div>`).join("");
