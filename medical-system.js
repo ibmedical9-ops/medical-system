@@ -879,7 +879,7 @@ async function saveDetailMedication() {
       "Patient":         currentPatientId,
       "Medication Name": name,
       "Dosage":          document.getElementById("dmed-dosage").value.trim(),
-      "Sponsorsed":      document.getElementById("dmed-avail") ? document.getElementById("dmed-avail").value : "لا",
+      "Sponsorsed":      (document.getElementById("dmed-avail") ? document.getElementById("dmed-avail").value : "لا"),
       "availability":    document.getElementById("dmed-available") ? document.getElementById("dmed-available").value === "true" : false,
       "availability 2":  document.getElementById("dmed-available") && document.getElementById("dmed-available").value === "true" ? "yes" : "no",
       "city":            document.getElementById("dmed-city") ? document.getElementById("dmed-city").value.trim() : "",
@@ -1262,9 +1262,10 @@ function openEditModal(type, id) {
     document.getElementById("emed-notes").value    = pf(m,"notes") || "";
     const setS = (id,val) => { const el=document.getElementById(id); if(el) el.value=String(val); };
     // Sponsorsed = نعم/لا → convert to true/false for select
-    // Sponsorsed
+    // Sponsorsed - select has نعم/لا values
     const sponsVal = pf(m,"Sponsorsed") || "لا";
-    setS("emed-avail", sponsVal);
+    const eavail = document.getElementById("emed-avail");
+    if (eavail) eavail.value = (sponsVal === "نعم") ? "نعم" : "لا";
     // availability boolean
     const availVal = pf(m,"availability");
     setS("emed-available", String(availVal === true || availVal === "true"));
@@ -1331,7 +1332,7 @@ async function updateMedication() {
     "Medication Name": name,
     "Dosage":          document.getElementById("emed-dosage").value.trim(),
     "price":           parseFloat(document.getElementById("emed-price").value) || 0,
-    "Sponsorsed":      document.getElementById("emed-avail") ? document.getElementById("emed-avail").value : "لا",
+    "Sponsorsed":      (document.getElementById("emed-avail") ? document.getElementById("emed-avail").value : "لا"),
     "availability":    document.getElementById("emed-available") ? document.getElementById("emed-available").value === "true" : false,
     "availability 2":  document.getElementById("emed-avail2") ? document.getElementById("emed-avail2").value : "no",
     "city":            document.getElementById("emed-city") ? document.getElementById("emed-city").value.trim() : "",
