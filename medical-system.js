@@ -575,7 +575,7 @@ async function saveMedication() {
       "Medication Name":  name,
       "Dosage":           document.getElementById("nmed-qty").value,
       "Sponsorsed":       document.getElementById("nmed-covered").value === "true" ? "نعم" : "لا",
-      "availability":     false,
+      "availability":     document.getElementById("nmed-available") ? document.getElementById("nmed-available").value === "true" : false,
       "price":            parseFloat(document.getElementById("nmed-price").value) || 0,
       "notes":            document.getElementById("nmed-notes").value.trim(),
     });
@@ -875,7 +875,7 @@ async function saveDetailMedication() {
       "Medication Name": name,
       "Dosage":          document.getElementById("dmed-dosage").value.trim(),
       "Sponsorsed":      document.getElementById("dmed-avail").value === "true" ? "نعم" : "لا",
-      "availability":    false,
+      "availability":    document.getElementById("dmed-available") ? document.getElementById("dmed-available").value === "true" : false,
       "price":           parseFloat(document.getElementById("dmed-price") ? document.getElementById("dmed-price").value : 0) || 0,
       "notes":           document.getElementById("dmed-mnotes").value.trim(),
     });
@@ -1247,8 +1247,13 @@ function openEditModal(type, id) {
     document.getElementById("emed-price").value    = pf(m,"price") || 0;
     document.getElementById("emed-notes").value    = pf(m,"notes") || "";
     const setS = (id,val) => { const el=document.getElementById(id); if(el) el.value=String(val); };
-    setS("emed-avail",     pf(m,"availability"));
-    setS("emed-available", pf(m,"availability"));
+    // Sponsorsed = نعم/لا → convert to true/false for select
+    const sponsVal = pf(m,"Sponsorsed");
+    const sponsBool = sponsVal === "نعم" ? "true" : "false";
+    setS("emed-avail",     sponsBool);
+    // availability = boolean
+    const availVal = pf(m,"availability");
+    setS("emed-available", String(availVal === true || availVal === "true"));
     // Show photo preview if exists
     const photoUrl = pf(m,"photo");
     const previewDiv = document.getElementById("emed-photo-preview");
@@ -1310,7 +1315,6 @@ async function updateMedication() {
     "availability":    document.getElementById("emed-available").value === "true",
     "notes":           document.getElementById("emed-notes").value.trim(),
   };
-  console.log("Updating medication:", id, JSON.stringify(data));
   try {
     await bubbleUpdate("A - 03 Medications And Sponsorships", id, data);
     const idx = S.medications.findIndex(x => x._id === id);
