@@ -879,8 +879,10 @@ async function saveDetailMedication() {
       "Patient":         currentPatientId,
       "Medication Name": name,
       "Dosage":          document.getElementById("dmed-dosage").value.trim(),
-      "Sponsorsed":      document.getElementById("dmed-avail").value === "true" ? "نعم" : "لا",
+      "Sponsorsed":      document.getElementById("dmed-avail") ? document.getElementById("dmed-avail").value : "لا",
       "availability":    document.getElementById("dmed-available") ? document.getElementById("dmed-available").value === "true" : false,
+      "availability 2":  document.getElementById("dmed-available") && document.getElementById("dmed-available").value === "true" ? "yes" : "no",
+      "city":            document.getElementById("dmed-city") ? document.getElementById("dmed-city").value.trim() : "",
       "price":           parseFloat(document.getElementById("dmed-price") ? document.getElementById("dmed-price").value : 0) || 0,
       "notes":           document.getElementById("dmed-mnotes").value.trim(),
     });
@@ -1017,6 +1019,13 @@ function switchPage(id) {
   if (pg) pg.classList.add("active");
   if (tb) tb.classList.add("active");
   if (id === "permissions") { renderPermissions(); loadBubbleUsers(); }
+}
+
+function goToPage(pageName) {
+  const isTest = window.location.href.includes("version-test");
+  const base   = window.location.origin;
+  const path   = isTest ? "/version-test/" + pageName : "/" + pageName;
+  window.location.href = base + path;
 }
 
 function clearFilter(key) {
@@ -1253,12 +1262,18 @@ function openEditModal(type, id) {
     document.getElementById("emed-notes").value    = pf(m,"notes") || "";
     const setS = (id,val) => { const el=document.getElementById(id); if(el) el.value=String(val); };
     // Sponsorsed = نعم/لا → convert to true/false for select
-    const sponsVal = pf(m,"Sponsorsed");
-    const sponsBool = sponsVal === "نعم" ? "true" : "false";
-    setS("emed-avail",     sponsBool);
-    // availability = boolean
+    // Sponsorsed
+    const sponsVal = pf(m,"Sponsorsed") || "لا";
+    setS("emed-avail", sponsVal);
+    // availability boolean
     const availVal = pf(m,"availability");
     setS("emed-available", String(availVal === true || availVal === "true"));
+    // availability 2 text
+    const avail2Val = pf(m,"availability 2") || "no";
+    setS("emed-avail2", avail2Val);
+    // city
+    const cityEl = document.getElementById("emed-city");
+    if (cityEl) cityEl.value = pf(m,"city") || "";
     // Show photo preview if exists
     const photoUrl = pf(m,"photo");
     const previewDiv = document.getElementById("emed-photo-preview");
@@ -1316,8 +1331,10 @@ async function updateMedication() {
     "Medication Name": name,
     "Dosage":          document.getElementById("emed-dosage").value.trim(),
     "price":           parseFloat(document.getElementById("emed-price").value) || 0,
-    "Sponsorsed":      document.getElementById("emed-avail").value === "true" ? "نعم" : "لا",
-    "availability":    document.getElementById("emed-available").value === "true",
+    "Sponsorsed":      document.getElementById("emed-avail") ? document.getElementById("emed-avail").value : "لا",
+    "availability":    document.getElementById("emed-available") ? document.getElementById("emed-available").value === "true" : false,
+    "availability 2":  document.getElementById("emed-avail2") ? document.getElementById("emed-avail2").value : "no",
+    "city":            document.getElementById("emed-city") ? document.getElementById("emed-city").value.trim() : "",
     "notes":           document.getElementById("emed-notes").value.trim(),
   };
   try {
