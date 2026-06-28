@@ -323,6 +323,11 @@ function filterMedications() {
   const prov    = document.getElementById("f-med-province")  ? document.getElementById("f-med-province").value  : "";
   const avail   = document.getElementById("f-med-avail")     ? document.getElementById("f-med-avail").value     : "";
   const covered = document.getElementById("f-med-covered")   ? document.getElementById("f-med-covered").value   : "";
+  // Force covered=نعم in pharmacist mode
+  if (pharmMode) {
+    const covSel = document.getElementById("f-med-covered");
+    if (covSel) covSel.value = "نعم";
+  }
   filtered.medications = S.medications.filter(m => {
     const name    = pfs(m,"Medication Name","").toLowerCase();
     const patId   = resolvePatientId(pf(m,"Patient"));
@@ -373,8 +378,8 @@ function renderMedications() {
       <td style="font-size:12px;color:#94a3b8;">${notes}</td>
       <td><div class="td-actions">
         ${photoUrl ? "<button class=\"btn btn-outline btn-sm btn-icon\" onclick=\"openPhoto(\'"+photoUrl+"\',\'"+name.replace(/'/g,"&apos;")+"\')\">🖼️</button>" : ""}
-        <button class="btn btn-outline btn-sm btn-icon" onclick="openEditModal('medication','${m._id}')">✏️</button>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteRecord('medications','${m._id}','medications')">🗑️</button>
+        ${!isPharmMode() ? '<button class="btn btn-outline btn-sm btn-icon" onclick="openEditModal(\'medication\',\''+m._id+'\')")>✏️</button>' : ""}
+        ${!isPharmMode() ? '<button class="btn btn-danger btn-sm btn-icon" onclick="deleteRecord(\'medications\',\''+m._id+'\',\'medications\')")>🗑️</button>' : ""}
       </div></td>
     </tr>`;
   }).join("");
@@ -1475,6 +1480,43 @@ function printPatientRx(patientId) {
     </body></html>`);
   win.document.close();
 }
+
+
+// ══════════════════════════════════════════════
+//  PHARMACIST MODE
+// ══════════════════════════════════════════════
+let pharmMode = false;
+
+function togglePharmMode() {
+  pharmMode = !pharmMode;
+  const btn = document.getElementById("pharmModeBtn");
+  if (btn) {
+    btn.textContent = pharmMode ? "👨‍💼 وضع المدير" : "🏥 وضع الصيدلاني";
+    btn.style.background = pharmMode ? "#dcfce7" : "";
+    btn.style.borderColor = pharmMode ? "#16a34a" : "";
+    btn.style.color       = pharmMode ? "#166534" : "";
+  }
+
+  // Lock covered filter to نعم in pharmacist mode
+  const coveredSel = document.getElementById("f-med-covered");
+  if (coveredSel) {
+    if (pharmMode) {
+      coveredSel.value = "نعم";
+      coveredSel.disabled = true;
+    } else {
+      coveredSel.disabled = false;
+    }
+  }
+
+  // Show/hide add button
+  const addBtn = document.querySelector('#page-medications .btn-primary');
+  if (addBtn) addBtn.style.display = pharmMode ? "none" : "";
+
+  // Re-render with new mode
+  filterMedications();
+}
+
+function isPharmMode() { return pharmMode; }
 
 // ══════════════════════════════════════════════
 //  INIT — wait for DOM inside Bubble
