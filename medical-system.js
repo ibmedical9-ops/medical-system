@@ -535,7 +535,8 @@ function renderAppointments() {
 async function savePatient() {
   const name = document.getElementById("np-name").value.trim();
   if (!name) { showToast("اسم المريض مطلوب", "error"); return; }
-  const needs = [...document.querySelectorAll('#modal-patient .chk-item input:checked')].map(c => c.value).join(", ");
+  const needsArr = [...document.querySelectorAll('#modal-patient .chk-item input:checked')].map(c => c.value);
+  const needs = needsArr.join(", ");  // can be empty string
   const data = {
     "Name":           name,
     "Case Number":    document.getElementById("np-id").value.trim(),
@@ -763,26 +764,31 @@ function renderDetailMedications() {
   const meds = S.medications.filter(m => resolvePatientId(pf(m,"Patient")) === currentPatientId);
   if (!meds.length) { el.innerHTML = emptyDetail("لا توجد أدوية مسجلة"); return; }
   el.innerHTML = `<div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية شهرياً</th><th>السعر</th><th>توفر</th><th>ملاحظات</th><th>إجراء</th></tr></thead>
+    <thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية شهرياً</th><th>السعر</th><th>الكفالة</th><th>التوفر</th><th>ملاحظات</th><th>إجراء</th></tr></thead>
     <tbody>${meds.map((m,i) => {
-      const avail    = pf(m,"availability");
+      const isAvail = pf(m,"availability")===true || pf(m,"availability")==="true";
+      const spons   = pf(m,"Sponsorsed") || "";
+      const sponsHtml = spons==="نعم"
+        ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">✅ مكفول</span>'
+        : spons==="لا"
+          ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;">❌ غير مكفول</span>'
+          : '<span style="color:#94a3b8;font-size:12px;">—</span>';
       return `<tr>
         <td>${i+1}</td>
         <td><strong>${pf(m,"Medication Name")||"—"}</strong></td>
         <td>${pf(m,"Dosage")||"—"}</td>
         <td style="font-size:12px;">${pf(m,"price")||0} د.ع</td>
-        <td><span class="avail ${(pf(m,"availability")===true||pf(m,"availability")==="true")?"yes":"no"}">${(pf(m,"availability")===true||pf(m,"availability")==="true")?"✓":"✗"}</span></td>
+        <td>${sponsHtml}</td>
+        <td><span class="avail ${isAvail?"yes":"no"}">${isAvail?"✓":"✗"}</span></td>
         <td style="font-size:12px;color:#94a3b8;">${pf(m,"notes")||"—"}</td>
         <td><div class="td-actions">
-          ${pf(m,"photo") ? "<button class=\"btn btn-outline btn-sm btn-icon\" onclick=\"openPhoto(\'"+pf(m,"photo")+"\',\'"+String(pf(m,"Medication Name")||"").replace(/'/g,"&apos;")+"\')\">🖼️</button>" : ""}
-          <button class="btn btn-outline btn-sm btn-icon" onclick="openEditModal('medication','${m._id}')">✏️</button>
+          ${pf(m,"photo") ? "<button class=\"btn btn-outline btn-sm btn-icon\" onclick=\"openPhoto('"+pf(m,"photo")+"''"+String(pf(m,"Medication Name")||"").replace(/'/g,"&apos;")+"'')\">🖼️</button>" : ""}
           <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDetailRecord('A - 03 Medications And Sponsorships','${m._id}','medications')">🗑️</button>
         </div></td>
       </tr>`;
     }).join("")}</tbody>
   </table></div>`;
 }
-
 function renderDetailLabs() {
   const el = document.getElementById("dt-labs-body");
   if (!el || !currentPatientId) return;
@@ -1293,7 +1299,7 @@ async function updatePatient() {
   const id   = document.getElementById("ep-id").value;
   const name = document.getElementById("ep-name").value.trim();
   if (!name) { showToast("الاسم مطلوب","error"); return; }
-  const needs = [...document.querySelectorAll("#ep-needs input:checked")].map(c=>c.value).join(", ");
+  const needs = [...document.querySelectorAll("#ep-needs input:checked")].map(c=>c.value).join(", ");  // empty = no assistance type
   const data = {
     "Name":           name,
     "Case Number":    document.getElementById("ep-caseno").value.trim(),
@@ -1309,7 +1315,10 @@ async function updatePatient() {
   if (document.getElementById("ep-dob").value)
     data["Date of Birth"] = document.getElementById("ep-dob").value;
   // Remove empty strings only (keep 0 and false)
-  Object.keys(data).forEach(k => { if(data[k] === "") delete data[k]; });
+  // Allow "helping type" to be empty (user may want to clear it)
+  Object.keys(data).forEach(k => {
+    if (data[k] === "" && k !== "helping type" && k !== "notes" && k !== "Address") delete data[k];
+  });
   console.log("Updating patient:", id, JSON.stringify(data));
   try {
     await bubbleUpdate("A - 01 Patients", id, data);
@@ -1459,14 +1468,19 @@ function printPatientRx(patientId) {
     ["تاريخ الميلاد", pf(p,"Date of Birth")?new Date(pf(p,"Date of Birth")).toLocaleDateString("ar-IQ"):"—"],
     ["الحالة",     pf(p,"final state")],
   ].map(([l,v])=>`<div><span style="font-weight:700;color:#1a3a5c;">${l}:</span> ${v||"—"}</div>`).join("");
-  const medsHtml = meds.map((m,i)=>`<tr>
-    <td>${i+1}</td>
-    <td>${pf(m,"Medication Name")||"—"}</td>
-    <td>${pf(m,"Dosage")||"—"}</td>
-    <td>${pf(m,"price")||0} د.ع</td>
-    <td>${pf(m,"availability")===true?"✅ متوفر":"❌ غير متوفر"}</td>
-    <td>${pf(m,"notes")||"—"}</td>
-  </tr>`).join("");
+  const medsHtml = meds.map((m,i)=>{
+    const isAvail = pf(m,"availability")===true||pf(m,"availability")==="true";
+    const spons   = pf(m,"Sponsorsed") || "—";
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${pf(m,"Medication Name")||"—"}</td>
+      <td>${pf(m,"Dosage")||"—"}</td>
+      <td>${pf(m,"price")||0} د.ع</td>
+      <td style="color:${spons==="نعم"?"#166534":"#991b1b"};font-weight:700;">${spons==="نعم"?"✅ مكفول":spons==="لا"?"❌ غير مكفول":"—"}</td>
+      <td>${isAvail?"✅ متوفر":"❌ غير متوفر"}</td>
+      <td>${pf(m,"notes")||"—"}</td>
+    </tr>`;
+  }).join("");
   const win = window.open("","_blank");
   win.document.write(`<!DOCTYPE html><html dir="rtl"><head>
     <meta charset="UTF-8">
@@ -1487,7 +1501,7 @@ function printPatientRx(patientId) {
       <p style="font-size:12px;color:#64748b;">وصفة طبية / قائمة أدوية</p>
     </div>
     <div class="info-grid">${infoHtml}</div>
-    <table><thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية الشهرية</th><th>السعر</th><th>حالة التوفر</th><th>ملاحظات</th></tr></thead>
+    <table><thead><tr><th>#</th><th>اسم الدواء</th><th>الكمية الشهرية</th><th>السعر</th><th>الكفالة</th><th>حالة التوفر</th><th>ملاحظات</th></tr></thead>
     <tbody>${medsHtml}</tbody></table>
     <div class="footer">
       <span>تاريخ الطباعة: ${new Date().toLocaleDateString("ar-IQ")}</span>
