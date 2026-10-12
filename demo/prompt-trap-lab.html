@@ -1,0 +1,726 @@
+<title>Prompt Trap Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: دفتر مختبر — عمودان (المصدر | التعليمات) ثم النتيجة والكشف تحتهما، ويظهر اللون البرتقالي حيث يقع الخطأ فقط */
+:root{
+  --bg:#eef1ee; --surface:#fbfcfb; --sunk:#e3e8e4; --ink:#17201c; --muted:#5d6a63; --line:#d3dad5;
+  --accent:#0f6b57; --accent-ink:#ffffff; --trap:#c4410c; --trap-bg:#fdeee6; --ok:#17733f; --ok-bg:#e4f3ea; --warn:#8a5a00; --warn-bg:#fbf1d9; --mark:#ffe08a;
+  --f-body:"IBM Plex Sans Arabic",system-ui,"Segoe UI",Tahoma,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1512; --surface:#171f1b; --sunk:#0d1210; --ink:#e6ede9; --muted:#9aa89f; --line:#2a352f;
+  --accent:#4fc3a1; --accent-ink:#06150f; --trap:#ff8f5c; --trap-bg:#3a2016; --ok:#6fd49a; --ok-bg:#15301f; --warn:#f0c15a; --warn-bg:#352a0f; --mark:#6b5a10; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1512; --surface:#171f1b; --sunk:#0d1210; --ink:#e6ede9; --muted:#9aa89f; --line:#2a352f;
+  --accent:#4fc3a1; --accent-ink:#06150f; --trap:#ff8f5c; --trap-bg:#3a2016; --ok:#6fd49a; --ok-bg:#15301f; --warn:#f0c15a; --warn-bg:#352a0f; --mark:#6b5a10; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.75 var(--f-body);padding-inline:16px;padding-block:0 32px;direction:rtl}
+.wrap{max-width:1080px;margin:0 auto}
+h1,h2,h3,h4{margin:0;line-height:1.35;text-wrap:balance}
+h2{font-size:1.1rem;font-weight:700}
+h3{font-size:1rem;font-weight:700;margin-block:18px 8px}
+header.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-block:16px 8px}
+.brand{display:flex;align-items:center;gap:12px}
+.mark-logo{font:600 1.05rem var(--f-mono);direction:ltr;background:var(--ink);color:var(--bg);padding:8px 10px;border-radius:8px;letter-spacing:.5px}
+.brand h1{font:600 1.2rem var(--f-mono);direction:ltr;text-align:right}
+.brand p{margin:0;color:var(--muted);font-size:.9rem}
+.notice{display:flex;gap:10px;align-items:flex-start;background:var(--warn-bg);color:var(--warn);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:.92rem;margin-block:8px 16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.stack{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:780px){.cols{grid-template-columns:minmax(0,1fr)}}
+.head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+label.lbl{display:block;font-weight:600;margin-bottom:4px}
+textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{min-height:150px;resize:vertical}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.source{white-space:pre-wrap;word-break:break-word;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px;margin:0;max-height:340px;overflow:auto;font:inherit;font-size:.94rem}
+mark{background:var(--mark);color:inherit;padding:0 2px;border-radius:3px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+button{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 16px;border-radius:8px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.reveal{border-color:var(--trap);color:var(--trap)}
+button.sm{padding:3px 10px;font-size:.85rem;font-weight:500}
+button.chip{border-radius:999px;padding:2px 12px;font-size:.85rem;font-weight:500;background:var(--sunk)}
+.muted{color:var(--muted);font-weight:400}
+.tag{display:inline-block;font-size:.8rem;padding:1px 10px;border-radius:999px;border:1px solid var(--line);background:var(--sunk)}
+.tag.sim{background:var(--warn-bg);color:var(--warn)}
+.out{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:right;vertical-align:top}
+th{background:var(--sunk);white-space:nowrap}
+tr.bad td{background:var(--trap-bg)}
+.out p{margin:6px 0}.out p.bad{background:var(--trap-bg);padding:6px 8px;border-radius:6px}
+.out.allbad{outline:2px dashed var(--trap);outline-offset:4px}
+.n{display:inline-block;margin-inline-start:6px;background:var(--trap);color:var(--bg);font:600 .72rem var(--f-mono);padding:0 7px;border-radius:999px}
+fieldset{border:1px dashed var(--line);border-radius:8px;margin:14px 0 0;padding:6px 12px}
+fieldset label{margin-inline-end:16px;cursor:pointer}
+.score{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.score b{font:600 2.6rem/1 var(--f-mono);direction:ltr}
+.dims{list-style:none;padding:0;margin:10px 0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.bar{height:7px;background:var(--sunk);border-radius:5px;overflow:hidden;margin:3px 0}
+.bar i{display:block;height:100%;background:var(--accent)}
+.partial .bar i{background:var(--warn)}.missing .bar i{background:var(--trap)}
+.dims small{color:var(--muted)}
+.err{border:1px solid var(--line);border-radius:10px;padding:12px;margin-block:12px;background:var(--surface)}
+.err>header{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:700;margin-bottom:8px}
+.cmp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+@media (max-width:780px){.cmp{grid-template-columns:minmax(0,1fr)}}
+.cmp>div{padding:10px;border-radius:8px;font-size:.94rem}
+.cmp .a{background:var(--trap-bg)}.cmp .b{background:var(--ok-bg)}
+.cmp h4{margin:0 0 4px;font-size:.8rem;color:var(--muted);font-weight:600}
+blockquote{margin:4px 0;padding-inline-start:10px;border-inline-start:3px solid var(--line)}
+.box{white-space:pre-wrap;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:.94rem}
+.hist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.hist li{min-width:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.hist li.cur{border-color:var(--accent)}
+.hist .sn{flex:1 1 220px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmpbox{background:var(--sunk);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.up{color:var(--ok)}.down{color:var(--trap)}
+.meta{margin:8px 0 0;font-size:.93rem}
+.hint{color:var(--muted);font-size:.86rem}
+#toast{position:fixed;inset-inline:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:480px;margin-inline:auto;background:var(--trap);color:var(--bg);padding:10px 14px;border-radius:10px;z-index:5}
+footer{color:var(--muted);font-size:.85rem;text-align:center;padding-top:16px}
+@media (prefers-reduced-motion:no-preference){.panel{transition:border-color .15s}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="brand"><span class="mark-logo" aria-hidden="true">&lt;/&gt;</span><div><h1>Prompt Trap Lab</h1><p>مختبر فخاخ البرومبتات</p></div></div>
+  <button id="newBtn" type="button">بدء تجربة جديدة</button>
+</header>
+<div class="notice" role="note"><span>نسخة تجريبية داخل المتصفح: كل شيء يعمل محلياً في صفحتك، لا تُرسل أي بيانات، ولا يُحفظ شيء بعد إغلاق الصفحة. المخرجات تولّدها محاكاة بقواعد لغوية وليست نموذجاً لغوياً حقيقياً، ومفتاح الإجابة موجود في ذاكرة الصفحة ولا يُحمى كما في النسخة الكاملة.</span></div>
+<div id="toast" hidden role="status"></div>
+
+<div class="stack">
+  <section id="setup" class="panel" hidden>
+    <div class="head"><h2>تجربة جديدة</h2></div>
+    <label class="lbl" for="srcSel">المصدر</label>
+    <select id="srcSel"><option value="sample">محضر تجريبي: اجتماع مراجعة إطلاق تطبيق «رحلتي»</option><option value="custom">محضر من عندي (ألصقه أدناه)</option></select>
+    <label class="lbl" for="srcTxt" style="margin-top:10px">نص المحضر <span id="srcCount" class="muted"></span></label>
+    <textarea id="srcTxt" style="min-height:190px" placeholder="الصق المحضر هنا. الصيغة المفضلة: «اسم المتحدث: كلامه» في كل سطر، وسطر «الحضور: ...» في البداية."></textarea>
+    <p class="hint">يُعامل النص كبيانات للتحليل فقط؛ أي تعليمات مكتوبة داخله لا تغيّر سلوك النظام.</p>
+    <div class="row"><button id="startBtn" class="main" type="button">ابدأ</button><button id="cancelBtn" type="button">إلغاء</button></div>
+  </section>
+
+  <div class="cols">
+    <section class="panel"><div class="head"><h2>المصدر</h2><span id="srcTitle" class="tag"></span></div><pre id="srcView" class="source" tabindex="0"></pre></section>
+    <section class="panel">
+      <div class="head"><h2>تعليماتك</h2></div>
+      <label class="lbl" for="prm">اكتب ما تريده من النموذج <span class="muted">(من عندك)</span></label>
+      <textarea id="prm" maxlength="4000" placeholder="اكتب هنا ما تريد من النموذج أن يفعله بالمحضر…"></textarea>
+      <div class="row"><span class="hint">أمثلة جاهزة للتجربة:</span>
+        <button class="chip" id="ex1" type="button">غامض</button><button class="chip" id="ex2" type="button">متوسط</button><button class="chip" id="ex3" type="button">دقيق</button></div>
+      <div class="row"><button id="runBtn" class="main" type="button">تنفيذ التعليمات</button></div>
+    </section>
+  </div>
+
+  <section id="res" class="panel" hidden>
+    <div class="head"><h2>نتيجة النموذج <span id="attTag" class="muted"></span></h2><span class="tag sim">محاكاة محلية — ليست نموذجاً لغوياً</span></div>
+    <div id="out" class="out"></div>
+    <fieldset><legend>هل ترى هذه النتيجة صحيحة؟ (قرارك قبل الكشف)</legend>
+      <label><input type="radio" name="vd" value="correct"> صحيحة</label><label><input type="radio" name="vd" value="wrong"> فيها أخطاء</label><label><input type="radio" name="vd" value="unsure"> لست متأكداً</label></fieldset>
+    <div class="row"><button id="retryBtn" type="button">محاولة أخرى</button><button id="revBtn" class="reveal" type="button">كشف الأخطاء</button><button id="evBtn" type="button">تقييم البرومبت</button><button id="impBtn" type="button">تحسين البرومبت</button></div>
+  </section>
+  <section id="evP" class="panel" hidden></section>
+  <section id="impP" class="panel" hidden></section>
+  <section id="revP" class="panel" hidden></section>
+  <section id="hist" class="panel" hidden><h2>سجل المحاولات</h2><div id="cmp" class="cmpbox" hidden style="margin-top:10px"></div><ol id="hl" class="hist" style="margin-top:10px"></ol></section>
+</div>
+<footer>التقييم الآلي تقريبي ولا يضمن جودة النتيجة مع نموذج حقيقي.</footer>
+</div>
+
+<script>
+/* Prompt Trap Lab — نسخة JavaScript من المحرك (مطابقة منطقياً لـ src/Domain و src/Support في PHP) */
+const PTL = (() => {
+'use strict';
+
+// ---------------------------------------------------------------- Text
+const MAP = {'أ':'ا','إ':'ا','آ':'ا','ٱ':'ا','ى':'ي','ئ':'ي','ة':'ه','ؤ':'و','٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9','،':',','؛':';','؟':'?'};
+const STRIP = /^[ً-ٰٟـ​-‏‪-‮]$/u;
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\\/\-]/g, '\\$&');
+const Text = {
+  normalize(s) {
+    const chars = Array.from(s); let norm = ''; const map = [];
+    chars.forEach((c, i) => { if (STRIP.test(c)) return; norm += (MAP[c] ?? c.toLowerCase()); map.push(i); });
+    return { norm, map, chars };
+  },
+  norm(s) { return Text.normalize(s).norm; },
+  rx(alts, wl = '', wr = '') { return new RegExp(wl + '(?:' + alts.split('|').map((a) => esc(Text.norm(a))).join('|') + ')' + wr, 'u'); },
+  has(n, alts) { return Text.rx(alts).test(n); },
+  find(n, re) {
+    const m = re.exec(n.norm); if (!m || m[0].length === 0) return null;
+    const cs = Array.from(n.norm.slice(0, m.index)).length, cl = Array.from(m[0]).length;
+    const os = n.map[cs], oe = n.map[cs + cl - 1];
+    return { text: n.chars.slice(os, oe + 1).join(''), start: os, end: oe + 1 };
+  },
+  slice(n, a, b) { return n.chars.slice(a, b === undefined ? n.chars.length : b).join(''); },
+  sentences(t) { return t.trim().split(/(?<=[.!?؟…])\s+|\r?\n+/u).map((x) => x.trim()).filter(Boolean); },
+  clean(s) { return s.trim().replace(/[\s.!?؟،,;؛…]+$/u, '').trim(); },
+  contains(h, n) { return n !== '' && Text.norm(h).includes(Text.norm(n)); },
+};
+const has = Text.has;
+
+// ---------------------------------------------------------------- Rng
+const mul32 = (a, b) => Math.imul(a, b) >>> 0;
+class Rng {
+  constructor(seed) { this.s = seed >>> 0; }
+  float() {
+    this.s = (this.s + 0x6D2B79F5) >>> 0;
+    let t = this.s;
+    t = mul32((t ^ (t >>> 15)) >>> 0, (t | 1) >>> 0);
+    t = (t ^ ((t + mul32((t ^ (t >>> 7)) >>> 0, (t | 61) >>> 0)) >>> 0)) >>> 0;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  chance(p) { return p > 0 && this.float() < p; }
+  pick(a) { return a[Math.floor(this.float() * a.length)]; }
+  shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(this.float() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+}
+
+// ---------------------------------------------------------------- MeetingParser
+const HEADERS = ['الحضور','المشاركون','المشاركين','التاريخ','العنوان','الموضوع','المكان','الجلسة'];
+const DAYS = 'الأحد|الاحد|الإثنين|الاثنين|الثلاثاء|الأربعاء|الاربعاء|الخميس|الجمعة|السبت';
+const MONTHS = 'يناير|فبراير|مارس|أبريل|ابريل|مايو|يونيو|يوليو|أغسطس|اغسطس|سبتمبر|أكتوبر|اكتوبر|نوفمبر|ديسمبر|كانون الثاني|شباط|آذار|نيسان|أيار|حزيران|تموز|آب|أيلول|تشرين الأول|تشرين الثاني|كانون الأول';
+
+function parseMeeting(source) {
+  let participants = [], title = null, date = null, speaker = null; const utt = [];
+  for (let line of source.trim().split(/\r?\n|\r/u)) {
+    line = line.trim(); if (!line) continue;
+    const m = /^([^:：]{1,30})[:：]\s*(.*)$/u.exec(line);
+    if (m && (m[1].trim().split(' ').length - 1) <= 2) {
+      const label = m[1].trim(), rest = m[2].trim(), nl = Text.norm(label); let isHeader = false;
+      for (const h of HEADERS) if (nl === Text.norm(h)) {
+        isHeader = true;
+        if (['الحضور','المشاركون','المشاركين'].includes(h)) { for (let p of rest.split(/\s*[،,;؛]\s*|\s+و(?=\s)\s*/u)) { p = p.trim(); if (p) participants.push(p); } }
+        else if (h === 'التاريخ') date = rest; else if (h === 'العنوان' || h === 'الموضوع') title = rest;
+      }
+      if (isHeader) continue;
+      speaker = label; participants.push(label); line = rest;
+    }
+    for (const s of Text.sentences(line)) utt.push([speaker, s]);
+  }
+  participants = [...new Set(participants)];
+  const items = []; let lastPending = null;
+  for (const [spk, sentence] of utt) {
+    const n = Text.normalize(sentence), norm = n.norm;
+    if (/^(?:ولكن |لكن )?(?:هذا )?(?:الموعد|التاريخ)(?![ء-ي])/u.test(norm) && has(norm, 'تقريبي|مبدئي|غير نهائي|غير مؤكد|قابل للتغيير') && items.length) {
+      const last = items[items.length - 1]; last.due_status = last.due ? 'tentative' : 'none'; last.evidence.push(Text.clean(sentence)); continue;
+    }
+    const isOpen = has(norm, 'لم يحسم|لم نحسم|لم تحسم|غير محسوم|لم يتم تحديد|لم يتم الاتفاق|لم نتفق|لم يحدد|لم يتحدد|لم تحدد|نؤجل البت|يؤجل البت|نحتاج الي معرفة|نحتاج الي تحديد|نحتاج الي التاكد|لا نعرف|ما زال مفتوح|سنناقش لاحقا|بحاجة الي قرار|بانتظار') && !has(norm, 'تقرر|قررنا');
+    const isReject = has(norm, 'رفضنا|تم رفض|تم رفضه|مرفوض|لم نوافق|لا نوافق علي|لم يتم قبول|رفض الاقتراح|رفضت');
+    const approveCue = has(norm, 'تمت الموافقه|وافق الجميع|اتفق الجميع|اتفقنا|تم الاتفاق|نوافق جميعا|وافقنا|لا اعتراض|تمت الموافقة');
+    const refWord = has(norm, 'ذلك|هذا|الاقتراح|المقترح|ما سبق|الفكره');
+    const isApprovalRef = approveCue && !isOpen && (refWord || Array.from(norm).length < 28) && !/علي (?:ان|تاجيل|اعتماد|اختيار)/u.test(norm);
+    const isProposal = has(norm, 'اقترح|اقتراح|ماذا لو|ما رايكم|يمكننا ان|هل نستطيع|افضل ان|اري ان|اظن ان|ممكن ان|فكره');
+    const isDecision = !isOpen && has(norm, 'تقرر|قررنا|قرر |تم الاتفاق علي|اتفقنا علي|تمت الموافقه علي|وافقنا علي|تم اعتماد|اعتمدنا|تم اختيار|اخترنا|القرار');
+    const owner = ownerOf(norm, spk, participants), taskCue = taskCueOf(norm, participants);
+    if (isOpen) { items.push(mkItem('open', sentence, spk, null, n)); continue; }
+    if (isReject && lastPending !== null) { items[lastPending].status = 'rejected'; items[lastPending].evidence.push(Text.clean(sentence)); lastPending = null; continue; }
+    if (isApprovalRef && lastPending !== null) {
+      const it = items[lastPending]; it.status = 'approved'; it.kind = (it.owner !== null || it.task_cue) ? 'task' : 'decision';
+      it.evidence.push(Text.clean(sentence)); lastPending = null; continue;
+    }
+    if (isProposal && !isDecision) { const it = mkItem('proposal', sentence, spk, owner, n); it.status = 'pending'; it.task_cue = taskCue; items.push(it); lastPending = items.length - 1; continue; }
+    if (isDecision && taskCue) { items.push(mkItem('task', sentence, spk, owner, n)); continue; }
+    if (isDecision) { items.push(mkItem('decision', sentence, spk, null, n)); continue; }
+    if (taskCue) { items.push(mkItem('task', sentence, spk, owner, n)); continue; }
+    if (norm.split(/\s+/u).filter(Boolean).length >= 4) items.push(mkItem('discussion', sentence, spk, null, n));
+  }
+  items.forEach((it, i) => { it.id = i + 1; });
+  return { title, date, participants, items };
+}
+function mkItem(kind, sentence, speaker, owner, n) {
+  const norm = n.norm;
+  const hedge = has(norm, 'ربما|قد |اظن|لعل|اتوقع|غالبا|تقريبا|مبدئيا|ان امكن|نحاول|احاول|ساحاول|سنحاول|نامل|لكن هذا الموعد');
+  const [due, dueStatus] = deadline(n, hedge), [core, cond] = condition(n, sentence);
+  return { id: 0, kind, text: Text.clean(sentence), core: Text.clean(core), condition: cond === null ? null : Text.clean(cond), speaker, owner, due, due_status: dueStatus,
+    hedged: hedge && kind === 'task', status: kind === 'proposal' ? 'pending' : null, task_cue: false, evidence: [Text.clean(sentence)] };
+}
+const SKIP_T = ['سيكون','ستكون','سنكون','سنوات','سنتين','سياره','سيارات','سيناريو','سينما','ستوديو','سيرفر','سيستم','ستايل','ستيف','ساعه','ساعات','ساعتين','ساعتان','سابق','سابقا','ساحه','ساكن','سايق','سالف','سياسه','سياسات','ستين','سنتر'];
+function taskCueOf(norm, participants) {
+  if (/(?<![ء-ي])(?:يتولي|تتولي|ستتولي|سيتولي|سنتولي|تكليف|كلف|تكلف|يكلف|اسند|تسند|مسوول(?:ه|ين)?|مسووليه)(?![ء-ي])/u.test(norm)) return true;
+  if (/(?<![ء-ي])سيتم(?![ء-ي])/u.test(norm)) return true;
+  if (/(?<![ء-ي])علي\s+\S+\s+ان\s/u.test(norm)) return true;
+  const skip = SKIP_T.concat(participants.map((p) => Text.norm(p.split(' ')[0])));
+  for (const tok of norm.match(/(?<![ء-ي])(?:سا|سي|ست|سن)[ء-ي]{2,}(?![ء-ي])/gu) || []) if (!skip.includes(tok) && !tok.startsWith('سنا')) return true;
+  return false;
+}
+function ownerOf(norm, speaker, participants) {
+  const skip = participants.map((p) => Text.norm(p.split(' ')[0])).concat(['ساعه','ساعات','ساعتين','سابق','سابقا','ساحه','ساكن','سايق']);
+  for (const tok of norm.match(/(?<![ء-ي])سا[ء-ي]{2,}(?![ء-ي])/gu) || []) if (!skip.includes(tok)) return speaker;
+  const found = [];
+  for (const p of participants) {
+    if (p === speaker) continue;
+    const m = new RegExp('(?<![ء-ي])(?:و|ل|ب|ك|ف)?' + esc(Text.norm(p.split(' ')[0])) + '(?![ء-ي])', 'u').exec(norm);
+    if (m) found.push([m.index, p]);
+  }
+  if (found.length) { found.sort((a, b) => a[0] - b[0]); return found[0][1]; }
+  return null;
+}
+function deadline(n, hedge) {
+  const d = Text.norm(DAYS), mo = Text.norm(MONTHS);
+  const core = '(?:' + d + ')|نهايه\\s+(?:الاسبوع|الشهر|الربع|السنه)|الاسبوع\\s+(?:القادم|المقبل)|الشهر\\s+(?:القادم|المقبل)|\\d{1,4}[\\/\\-]\\d{1,2}(?:[\\/\\-]\\d{1,4})?|\\d{1,2}\\s+(?:' + mo + ')(?:\\s+\\d{4})?|(?:' + mo + ')\\s+(?:القادم|المقبل)|بعد\\s+\\d+\\s+(?:ايام|يوم|اسابيع|اسبوع|اشهر|شهر)|بعد\\s+(?:يومين|اسبوعين|شهرين)|غدا|بعد غد|الاسبوع القادم';
+  const re = new RegExp('(?<![ء-ي])(?:(?:قبل|بحلول|حتي|خلال|مع|في)\\s+|ب)?(?:يوم\\s+)?(?:' + core + ')(?:\\s+(?:القادم|المقبل))?', 'u');
+  const hit = Text.find(n, re); if (!hit) return [null, 'none'];
+  return [Text.clean(hit.text), (hedge || has(n.norm, 'تقريبي|مبدئي|غير نهائي|غير مؤكد')) ? 'tentative' : 'confirmed'];
+}
+function condition(n, sentence) {
+  const hit = Text.find(n, /(?<![ء-ي])(?:بشرط|ما لم|الا اذا|شريطه|علي ان يتم|بعد موافقه|بعد اعتماد|بحيث|اذا)(?![ء-ي])/u);
+  if (!hit || hit.start < 8) return [sentence, null];
+  return [Text.slice(n, 0, hit.start), Text.slice(n, hit.start)];
+}
+
+// ---------------------------------------------------------------- PromptAnalyzer
+const DIMENSIONS = {
+  task: { label: 'وضوح المهمة', weight: 15, gap: 'لم تُحدَّد المهمة بدقة؛ يمكن للنموذج اختيار تفسير واحد من عدة تفسيرات.' },
+  source: { label: 'تحديد المصدر', weight: 15, gap: 'لم تُلزم النموذج بالاعتماد على المصدر وحده؛ يمكنه إضافة معلومات من عنده.' },
+  scope: { label: 'نطاق المعلومات', weight: 15, gap: 'لم تُحدَّد المعلومات المطلوبة ولا مدى الاكتمال؛ يمكنه الإجابة عن جزء وإسقاط تفاصيل.' },
+  format: { label: 'تنسيق المخرجات', weight: 10, gap: 'لم يُحدَّد شكل المخرجات؛ يمكنه اختيار شكل لا يناسب حاجتك.' },
+  unknown: { label: 'التعامل مع المجهول', weight: 15, gap: 'لم تحدد ماذا يفعل مع المعلومة الناقصة؛ يمكنه ملؤها بتخمين.' },
+  distinction: { label: 'التمييز بين الحقيقة والمقترح والقرار', weight: 15, gap: 'لم تطلب التمييز بين المؤكد والمقترح وغير المحسوم؛ يمكنه الخلط بينها.' },
+  verification: { label: 'التحقق مقابل المصدر', weight: 15, gap: 'لم تشترط مراجعة النتائج مقابل المصدر؛ تمر الأخطاء دون فحص.' },
+};
+const CATEGORIES = {
+  decisions: 'قرار|قرارات|اتفاق|اتفاقات|ما تم الاتفاق|ما تقرر|ما تم اعتماده',
+  tasks: 'مهمة|مهام|مطلوب|اجراءات|إجراءات|تكليفات|التزامات|اعمال المتابعة|بنود العمل',
+  owners: 'مسؤول|مسؤولين|مسؤولية|مسؤوليات|المكلف|المكلفين|من سيقوم|اصحاب المهام',
+  deadlines: 'موعد|مواعيد|تاريخ|تواريخ|الموعد النهائي|مهلة|مهل|جدول زمني|متى',
+  proposals: 'مقترح|مقترحات|اقتراح|اقتراحات|افكار',
+  open: 'غير محسوم|غير المحسومة|معلق|معلقة|نقاط مفتوحة|لم تحسم|لم يحسم|نقاط عالقة|اسئلة مفتوحة',
+};
+function formatKind(p) {
+  if (/json/u.test(p)) return 'json';
+  if (/جدول(?!\s+زمني)|اعمده|عمود|csv/u.test(p)) return 'table';
+  if (has(p, 'قايمه|نقاط|ترقيم|مرقمه|bullet|بنود')) return 'list';
+  if (has(p, 'فقره|فقرات|نثر|سرد')) return 'prose';
+  return 'none';
+}
+const j = (a) => a.filter(Boolean).join('، ');
+function analyze(prompt) {
+  const p = Text.norm(prompt), requested = [];
+  for (const [c, a] of Object.entries(CATEGORIES)) if (has(p, a)) requested.push(c);
+  const L = {};
+  { const verb = has(p, 'استخرج|لخص|حلل|اكتب|اعرض|حدد|اذكر|رتب|صنف|اسرد|عدد|سجل|قدم|اعطني|اريد|جمع|فرز|ولد|اعد'); const o = requested.length;
+    L.task = [Math.min(1, (verb ? .35 : 0) + (o >= 2 ? .65 : o === 1 ? .4 : 0)), j([verb && 'فعل الطلب', o && 'نوع المعلومات المطلوبة (' + o + ')'])]; }
+  { const ref = has(p, 'من المصدر|من النص|المحضر|محضر|النص المرفق|المصدر|الوارد في|المذكور في|بناء علي النص|استنادا الي|بالاعتماد علي|وفق النص');
+    const only = has(p, 'وحده|وحدها|حصرا|فحسب|دون سواه|دون غيره');
+    const excl = only || /(?:من|علي|الي|في|ب)\s*(?:ال)?(?:مصدر|نص|محضر)\S*\s+فقط|فقط\s+(?:من|علي|ب)\s*(?:ال)?(?:مصدر|نص|محضر)/u.test(p) || has(p, 'لا تضف|لا تخترع|لا تستخدم اي معلومات|لا تستخدم معلومات|من خارج|دون اضافه|لا تفترض|لا تعتمد علي اي معلومات|لا تضيف');
+    L.source = [(ref ? .5 : 0) + (excl ? .5 : 0), j([ref && 'الإشارة إلى المصدر', excl && 'الحصر في المصدر/منع الإضافة'])]; }
+  { const n = requested.length, base = n >= 3 ? .7 : n === 2 ? .5 : n === 1 ? .3 : 0;
+    const comp = has(p, 'جميع|كل |كافة|لا تحذف|لا تهمل|دون حذف|حافظ علي|التفاصيل|الشروط|الاستثناءات|شامل|كامل|بالكامل');
+    L.scope = [Math.min(1, base + (comp ? .3 : 0)), j([n && 'فئات المعلومات المطلوبة (' + n + ')', comp && 'اشتراط الاكتمال/حفظ التفاصيل'])]; }
+  { const k = formatKind(p);
+    L.format = k !== 'none' ? [1, 'نوع الشكل (' + k + ')'] : has(p, 'منظم|مرتب|واضح|مختصر|موجز|بسيط') ? [.25, 'وصف عام للشكل دون تحديده'] : [0, '']; }
+  { const cond = /(?:اذا|في حال|عند|حين|لو)\s.{0,40}?(?:غير|مجهول|ناقص|لم يذكر|لم تذكر|لم يحدد|مفقود|ما ذكر|غاب|غابت|لم يرد|لم ترد)/u.test(p)
+      || /(?:اي|كل)\s+(?:معلومه|مسوول|موعد|اسم|تاريخ|بند)\S*(?:\s+او\s+\S+)?\s+(?:لم يرد|لم ترد|لم يذكر|لم تذكر|لم يحدد|غير مذكور|غير موجود|غير محدد|مفقود)/u.test(p)
+      || /(?:المعلومات?|المعلومه|الاسم|الموعد|المسوول)\s+(?:المجهول|الناقص|غير المذكور|غير المحدد|المفقود)/u.test(p);
+    const label = has(p, 'غير محدد|غير معروف|غير مذكور|مجهول|ناقص|لم يحدد');
+    const action = /(?<![ء-ي])(?:ف|و)?(?:اكتب|اذكر|ضع|اشر|سجل|علم|وضح|بين|قل|صرح|اعلن)/u.test(p);
+    const ng = has(p, 'لا تخمن|لا تفترض|لا تخترع|لا تتوقع|لا تضف');
+    let s = 0; const f = [];
+    if (cond) { s += .5; f.push('حالة المعلومة الناقصة'); if (action) { s += .5; f.push('ما يُكتب عندها'); } }
+    else if (label) { s += .3; f.push('ذُكر «غير محدد» دون قاعدة واضحة'); }
+    if (ng) { s += .35; f.push('منع التخمين'); }
+    L.unknown = [Math.min(1, s), j(f)]; }
+  { const verb = has(p, 'ميز|فرق|افصل|صنف|قسم|فصل'), noun = has(p, 'مقترح|قرار|مؤكد|محسوم|افتراض|حقيق|نهائي|معتمد');
+    const nc = has(p, 'لا تحول|لا تخلط|لا تعتبر|لا تعامل|لا تجعل') && has(p, 'مقترح|اقتراح');
+    const weak = has(p, 'مؤكد|محسوم|نهائي|معتمد|رسمي'); let s = 0; const f = [];
+    if (verb && noun) { s += .8; f.push('طلب التمييز بين الأنواع'); }
+    if (nc) { s += .4; f.push('منع تحويل المقترح إلى قرار'); }
+    if (s === 0 && weak) { s = .35; f.push('إشارة عابرة إلى «المؤكد» دون قاعدة للتمييز'); }
+    L.distinction = [Math.min(1, s), j(f)]; }
+  { const verb = has(p, 'راجع|تحقق|دقق|قارن|طابق|تاكد|فحص|اختبر');
+    const ref = /(?:مقابل|مع|من|في|الي|علي|بالرجوع الي|ب)\s*(?:ال)?(?:مصدر|نص|محضر)/u.test(p);
+    L.verification = verb && ref ? [1, 'مراجعة النتائج مقابل المصدر'] : verb ? [.4, 'طلب مراجعة دون ربطها بالمصدر'] : has(p, 'كن دقيق|بدقة|دقيق|بعناية') ? [.1, 'عبارة «دقيق» وحدها لا تحدد أي فحص'] : [0, '']; }
+
+  let score = 0, min = 1; const dims = {}, gaps = [];
+  for (const [k, m] of Object.entries(DIMENSIONS)) {
+    const [lv, found] = L[k]; score += m.weight * lv; min = Math.min(min, lv);
+    const status = lv >= .75 ? 'ok' : lv >= .35 ? 'partial' : 'missing'; if (lv < .75) gaps.push(k);
+    dims[k] = { label: m.label, weight: m.weight, level: Math.round(lv * 100) / 100, status,
+      detail: status === 'ok' ? 'محدَّد: ' + found : found !== '' ? 'محدَّد جزئياً: ' + found + ' — ' + m.gap : m.gap };
+  }
+  score = Math.round(score);
+  return { score, dimensions: dims, gaps, requested, format: formatKind(p), mode: (score >= 85 && min >= .75) ? 'precise' : 'trap', min_level: Math.round(min * 100) / 100 };
+}
+
+// ---------------------------------------------------------------- Simulator
+const TYPES = {
+  assumption: ['خطأ الافتراض', 'high'], ambiguity: ['خطأ الغموض', 'medium'], omission: ['خطأ الحذف', 'medium'], confusion: ['خطأ الالتباس', 'high'],
+  attribution: ['خطأ الإسناد', 'high'], time: ['خطأ الزمن', 'high'], format: ['خطأ التنسيق', 'low'], scope: ['خطأ النطاق', 'medium'],
+};
+const TRAP_DIMS = { ambiguity: ['task'], scope: ['scope','task'], confusion: ['distinction','verification'], attribution: ['unknown','source','verification'],
+  time: ['unknown','verification'], assumption: ['source','unknown','verification'], omission: ['scope','verification'], format: ['format'] };
+const CAT_ORDER = { decision: 0, task: 1, proposal: 2, open: 3, discussion: 4 };
+const CAT_LABEL = { decision: 'قرار', task: 'مهمة', proposal: 'مقترح', open: 'نقطة مفتوحة', discussion: 'نقطة نقاش' };
+const PROSE_TITLE = { decision: 'القرارات', task: 'المهام', proposal: 'المقترحات', open: 'النقاط المفتوحة', discussion: 'النقاش' };
+const REQ_TO_CAT = { decisions: 'decision', tasks: 'task', proposals: 'proposal', open: 'open' };
+
+function dueCell(r) { if (r.due === null) return r.cat === 'task' ? 'غير محدد' : '—'; return r.due_status === 'tentative' ? r.due + ' (تقريبي — غير مؤكد)' : r.due; }
+function render(rows, style, cols) {
+  if (style === 'prose') {
+    const groups = {}; rows.forEach((r) => (groups[r.cat] ||= []).push(r));
+    const units = [], map = {}, paras = []; let n = 0;
+    for (const cat of ['decision','task','proposal','open','discussion']) {
+      if (!groups[cat]) continue; const id = 'u' + (++n);
+      const parts = groups[cat].map((r) => { let s = r.text; if (r.owner !== null) s += ' (المسؤول: ' + r.owner + ')'; if (r.due !== null) s += ' — الموعد: ' + r.due; map[r.key] = id; return s; });
+      const para = PROSE_TITLE[cat] + ': ' + parts.join('؛ ') + '.'; paras.push(para); units.push({ id, cat, cells: [para] });
+    }
+    return { headers: [], units, text: paras.length ? paras.join('\n\n') : 'لا توجد بنود مطابقة في المصدر.', key_to_unit: map };
+  }
+  const headers = ['النوع', 'البند']; if (cols.owner) headers.push('المسؤول'); if (cols.due) headers.push('الموعد'); headers.push('الحالة');
+  const units = [], map = {};
+  rows.forEach((r, i) => {
+    const id = 'u' + (i + 1), cells = [CAT_LABEL[r.cat] ?? r.cat, r.text];
+    if (cols.owner) cells.push(r.owner ?? (r.cat === 'task' ? 'غير محدد' : '—')); if (cols.due) cells.push(dueCell(r)); cells.push(r.status);
+    units.push({ id, cat: r.cat, cells }); map[r.key] = id;
+  });
+  if (!units.length) return { headers, units: [], text: 'لا توجد بنود مطابقة في المصدر.', key_to_unit: {} };
+  let text;
+  if (style === 'json') text = JSON.stringify(units.map((u) => Object.fromEntries(headers.map((h, i) => [h, u.cells[i]]))), null, 4);
+  else if (style === 'table') text = ['| ' + headers.join(' | ') + ' |', '|' + ' --- |'.repeat(headers.length), ...units.map((u) => '| ' + u.cells.map((c) => c.replace(/\|/g, '\\|').replace(/\n/g, ' ')).join(' | ') + ' |')].join('\n');
+  else text = units.map((u) => '- ' + u.cells[0] + ': ' + u.cells[1] + ' — ' + headers.slice(2).map((h, i) => h + ': ' + u.cells.slice(2)[i]).join(' — ')).join('\n');
+  return { headers, units, text, key_to_unit: map };
+}
+
+class Simulator {
+  run(truth, analysis, source, seed) {
+    this.seq = 0; this.errors = []; this.omitted = []; this.assumptions = []; this.touched = {};
+    const rng = new Rng(seed), vague = !analysis.requested.length;
+    const cats = this.effectiveCats(analysis.requested), cols = this.columns(analysis.requested);
+    let rows = this.project(truth, cats); const baseCount = rows.length, baseKeys = rows.map((r) => r.key);
+    let style = analysis.format === 'none' ? 'list' : analysis.format, forceProse = false;
+    const ctx = { rows, truth, cats, rng, baseCount, source };
+    const self = this;
+    if (analysis.mode === 'trap') {
+      const p = this.probabilities(analysis.dimensions), force = analysis.score < 50;
+      const lowest = (ds) => Math.min(...ds.map((d) => analysis.dimensions[d].level));
+      let discussionMode = false;
+      if (vague && rng.chance(p.ambiguity)) discussionMode = this.ambiguity(ctx);
+      if (!discussionMode) {
+        if (!this.hasError('ambiguity') && rng.chance(p.scope)) this.scope(ctx);
+        if (rng.chance(p.confusion)) { const n = lowest(TRAP_DIMS.confusion) < .25 && rng.chance(.6) ? 2 : 1; for (let i = 0; i < n; i++) this.confusion(ctx); }
+        if (rng.chance(p.attribution)) this.attribution(ctx);
+        if (rng.chance(p.time)) { const n = lowest(TRAP_DIMS.time) < .25 && rng.chance(.5) ? 2 : 1; for (let i = 0; i < n; i++) this.time(ctx); }
+        if (rng.chance(p.assumption)) this.assumption(ctx, lowest(TRAP_DIMS.assumption) < .25);
+        if (rng.chance(p.omission)) this.omission(ctx);
+        if (force && !this.errors.length) {
+          for (const t of ['confusion','time','assumption','attribution','omission','scope']) {
+            const before = this.errors.length;
+            ({ confusion: () => self.confusion(ctx), time: () => self.time(ctx), assumption: () => self.assumption(ctx, false), attribution: () => self.attribution(ctx), omission: () => self.omission(ctx), scope: () => self.scope(ctx) })[t]();
+            if (this.errors.length > before) break;
+          }
+        }
+      }
+      if (analysis.format === 'none' && rng.chance(p.format) && ctx.rows.length >= 2) forceProse = true;
+    }
+    rows = ctx.rows;
+    rows.sort((a, b) => (CAT_ORDER[a.cat] - CAT_ORDER[b.cat]) || (a.order - b.order));
+    style = forceProse ? 'prose' : style;
+    const out = render(rows, style, cols);
+    if (forceProse) this.addError('format', null, '*', 'عُرضت النتيجة كفقرات متصلة دون جدول، وسقطت منها خانة الحالة (قرار/مقترح/غير محسوم).', ['البرومبت لم يحدد شكل المخرجات'],
+      'جدول بأعمدة النوع والبند والمسؤول والموعد والحالة، يبقي الفروق بين المؤكد وغير المؤكد ظاهرة.',
+      'لم يحدد البرومبت صيغة المخرجات، فاختار النموذج أسلوباً سردياً يخفي حالة كل بند ويخلط المسؤول والموعد داخل الجملة.', 'format', false, 'prompt');
+    for (const e of this.errors) { if (e.row_key !== null && out.key_to_unit[e.row_key]) e.unit_id = out.key_to_unit[e.row_key]; delete e.row_key; }
+    const correct = render(this.project(truth, ['decision','task','proposal','open']), 'table', { owner: true, due: true });
+    const untouched = baseKeys.filter((k) => !this.touched[k]).length;
+    return { style, headers: out.headers, units: out.units, text: out.text, errors: this.errors, omitted: this.omitted, assumptions: this.assumptions,
+      correct: { headers: correct.headers, units: correct.units, text: correct.text },
+      stats: { mode: analysis.mode, rows_in_output: out.units.length, rows_expected: baseCount, rows_with_errors: baseCount - untouched, rows_correct: untouched, error_count: this.errors.length,
+        accuracy_percent: baseCount > 0 ? Math.round(100 * untouched / baseCount) : 100 },
+      no_error_note: this.errors.length ? null : 'لم تتضمن النتيجة خطأً قابلاً للإثبات بالمقارنة مع المصدر.' };
+  }
+  effectiveCats(req) {
+    if (!req.length) return ['decision', 'task'];
+    const c = []; req.forEach((r) => { if (REQ_TO_CAT[r]) c.push(REQ_TO_CAT[r]); });
+    if (req.includes('owners') || req.includes('deadlines')) c.push('task');
+    return [...new Set(c.length ? c : ['decision', 'task'])];
+  }
+  columns(req) { const t = req.includes('tasks') || !req.length; return { owner: t || req.includes('owners'), due: t || req.includes('deadlines') }; }
+  project(truth, cats) { const rows = []; for (const it of truth.items) if (cats.includes(it.kind)) rows.push(this.rowFromItem(it, rows.length)); return rows; }
+  rowFromItem(it, order) {
+    const status = it.kind === 'decision' ? 'قرار مؤكد' : (it.kind === 'task' && it.hedged) ? 'التزام غير مؤكد' : it.kind === 'task' ? 'مهمة مؤكدة'
+      : (it.kind === 'proposal' && it.status === 'rejected') ? 'مقترح مرفوض' : it.kind === 'proposal' ? 'مقترح — لم يُعتمد' : it.kind === 'open' ? 'غير محسوم' : 'نقطة نقاش';
+    return { key: ++this.seq, order, cat: it.kind, text: it.text, owner: it.owner, due: it.due, due_status: it.due_status, status, item_id: it.id, item: it, evidence: it.evidence, fabricated: false, owner_assumed: false };
+  }
+  probabilities(dims) { const f = (l) => l < .5 ? .9 : l < .75 ? .4 : 0; const p = {}; for (const [t, ds] of Object.entries(TRAP_DIMS)) p[t] = Math.max(...ds.map((d) => f(dims[d].level))); return p; }
+  canTouch(base) { return Object.keys(this.touched).length < Math.max(1, Math.floor(.6 * base)); }
+  hasError(t) { return this.errors.some((e) => e.type === t); }
+  touch(r) { this.touched[r.key] = true; }
+  addError(type, rowKey, unit, claim, evidence, correct, why, dim, fab, from = 'source') {
+    this.errors.push({ type, label: TYPES[type][0], severity: TYPES[type][1], row_key: rowKey, unit_id: unit, claim, source_evidence: [...evidence], evidence_from: from, correct_value: correct, explanation: why, cause_dim: dim, fabricated: fab });
+  }
+  ambiguity(c) {
+    const by = {}; c.rows.forEach((r) => (by[r.cat] ||= []).push(r)); const opts = {};
+    if (by.decision && by.task) { opts.decisions_only = [by.task, 'استخراج القرارات فقط']; opts.tasks_only = [by.decision, 'استخراج المهام فقط']; }
+    const disc = c.truth.items.filter((i) => i.kind === 'discussion');
+    if (disc.length && c.rows.length) opts.discussion = [c.rows, 'تلخيص مجريات النقاش'];
+    const keys = Object.keys(opts); if (!keys.length) return false;
+    const choice = c.rng.pick(keys), [dropped, label] = opts[choice];
+    if (choice === 'decisions_only') c.rows = c.rows.filter((r) => r.cat === 'decision');
+    else if (choice === 'tasks_only') c.rows = c.rows.filter((r) => r.cat === 'task');
+    else c.rows = disc.slice(0, 4).map((d, i) => this.rowFromItem(d, i));
+    const ev = [];
+    for (const d of dropped) { ev.push(d.evidence[0]); this.omitted.push({ reason: 'ambiguity', category: d.cat, text: d.text, evidence: d.evidence }); this.touch(d); }
+    this.addError('ambiguity', null, null, 'فُسِّر الطلب على أنه «' + label + '».', ev.slice(0, 3),
+      'الطلب «مخرجات الاجتماع» يحتمل عدة معانٍ؛ المطلوب غالباً: القرارات والمهام (مع المسؤول والموعد) ومعها المقترحات والنقاط غير المحسومة.',
+      'العبارة «مخرجات الاجتماع» لا تحدد أي معلومات تُستخرج، فاختار النموذج تفسيراً واحداً دون سؤالك، وأسقط ' + dropped.length + ' بنداً موجوداً في المصدر.', 'task', false, 'prompt+source');
+    return choice === 'discussion';
+  }
+  scope(c) {
+    const by = {}; c.rows.forEach((r) => (by[r.cat] ||= []).push(r)); if (Object.keys(by).length < 2) return;
+    for (const cat of c.rng.shuffle(Object.keys(by))) {
+      const dropped = by[cat]; if (Object.keys(this.touched).length + dropped.length > Math.max(1, Math.floor(.6 * c.baseCount))) continue;
+      c.rows = c.rows.filter((r) => r.cat !== cat); const ev = [];
+      for (const d of dropped) { ev.push(d.evidence[0]); this.touch(d); this.omitted.push({ reason: 'scope', category: cat, text: d.text, evidence: d.evidence }); }
+      this.addError('scope', null, null, 'غابت فئة «' + CAT_LABEL[cat] + '» كلياً من المخرجات (' + dropped.length + ' بنداً).', ev.slice(0, 3), 'تغطية فئة «' + CAT_LABEL[cat] + '» أيضاً.',
+        'لم يحدد البرومبت نطاق المعلومات المطلوبة ولا اشترط الاكتمال، فأجاب النموذج عن جزء من المهمة وأهمل الباقي.', 'scope', false);
+      return;
+    }
+  }
+  confusion(c) {
+    const target = c.cats.includes('decision') ? 'decision' : c.cats.includes('task') ? 'task' : null; if (target === null) return;
+    const done = this.errors.map((e) => e.item_id ?? null), cands = {};
+    for (const it of c.truth.items) {
+      if (done.includes(it.id)) continue;
+      const g = (it.kind === 'proposal' && it.status === 'pending') ? 0 : it.kind === 'open' ? 1 : (it.kind === 'proposal' && it.status === 'rejected') ? 2 : (it.kind === 'task' && it.hedged) ? 3 : null;
+      if (g !== null) (cands[g] ||= []).push(it);
+    }
+    for (const g of Object.keys(cands).map(Number).sort((a, b) => a - b)) for (const it of c.rng.shuffle(cands[g])) {
+      let ex = null; c.rows.forEach((r, i) => { if (r.item_id === it.id) ex = i; });
+      if (ex !== null && this.touched[c.rows[ex].key]) continue;
+      let row;
+      if (ex !== null) { if (!this.canTouch(c.baseCount)) return; row = c.rows[ex]; }
+      else { c.rows.push(this.rowFromItem(it, 10000 + it.id)); row = c.rows[c.rows.length - 1]; }
+      const before = row.status;
+      row.cat = (it.kind === 'task' || (it.owner !== null && target === 'task')) ? 'task' : target; if (it.kind === 'task') row.cat = 'task';
+      row.status = row.cat === 'task' ? 'مهمة مؤكدة' : 'قرار مؤكد'; if (row.due !== null) row.due_status = 'confirmed';
+      this.touch(row);
+      const correct = (it.kind === 'proposal' && it.status === 'rejected') ? 'مقترح رُفض صراحة ولم يُعتمد.' : it.kind === 'proposal' ? 'مقترح لم تتم الموافقة عليه.' : it.kind === 'open' ? 'نقطة غير محسومة.' : 'التزام غير مؤكد (المتحدث تحفّظ في صياغته).';
+      this.errors.push({ type: 'confusion', label: TYPES.confusion[0], severity: 'high', row_key: row.key, unit_id: null, item_id: it.id, claim: row.text + ' — ' + row.status,
+        source_evidence: it.evidence, evidence_from: 'source', correct_value: correct + ' (الحالة في الإخراج: «' + before + '» → «' + row.status + '»)',
+        explanation: 'لم يطلب البرومبت التمييز بين المؤكد والمقترح وغير المحسوم، فعاملها النموذج كأنها بند نهائي.', cause_dim: 'distinction', fabricated: false });
+      return;
+    }
+  }
+  attribution(c) {
+    const cands = []; c.rows.forEach((r, i) => { if (r.cat === 'task' && r.owner !== null && !this.touched[r.key]) cands.push(i); });
+    if (!cands.length || !this.canTouch(c.baseCount)) return;
+    const row = c.rows[c.rng.pick(cands)];
+    const others = c.truth.participants.filter((p) => p !== row.owner && !Text.contains(row.text, p.split(' ')[0])); if (!others.length) return;
+    const wrong = c.rng.pick(others), real = row.owner; row.owner = wrong; this.touch(row);
+    this.errors.push({ type: 'attribution', label: TYPES.attribution[0], severity: 'high', row_key: row.key, unit_id: null, item_id: row.item_id, claim: 'المسؤول: ' + wrong + ' — ' + row.text,
+      source_evidence: row.evidence, evidence_from: 'source', correct_value: 'المسؤول وفق المصدر: ' + real,
+      explanation: 'لم يشترط البرومبت الرجوع إلى المصدر لكل اسم ولا مراجعة الإسناد، فنُسبت المهمة إلى شخص غير مذكور فيها.', cause_dim: 'verification', fabricated: false });
+  }
+  time(c) {
+    const tent = [], none = [];
+    c.rows.forEach((r, i) => { if (this.touched[r.key]) return; if (r.due !== null && r.due_status === 'tentative') tent.push(i); else if (r.cat === 'task' && r.due === null) none.push(i); });
+    if (!this.canTouch(c.baseCount)) return;
+    if (tent.length) {
+      const row = c.rows[c.rng.pick(tent)]; row.due_status = 'confirmed'; this.touch(row);
+      this.errors.push({ type: 'time', label: TYPES.time[0], severity: 'high', row_key: row.key, unit_id: null, item_id: row.item_id, claim: 'الموعد: ' + row.due + ' (عُرض كموعد نهائي) — ' + row.text,
+        source_evidence: row.evidence, evidence_from: 'source', correct_value: 'الموعد «' + row.due + '» تقريبي/غير مؤكد في المصدر.',
+        explanation: 'لم يحدد البرومبت كيف تُعامَل المعلومات غير المؤكدة، فأسقط النموذج التحفظ الزمني وقدّم الموعد كأنه نهائي.', cause_dim: 'unknown', fabricated: false });
+      return;
+    }
+    if (none.length) {
+      const ph = ['نهاية الأسبوع القادم', 'الأحد القادم', 'خلال أسبوعين', '15 من الشهر القادم'].filter((p) => !Text.contains(c.source, p)); if (!ph.length) return;
+      const row = c.rows[c.rng.pick(none)], phrase = c.rng.pick(ph); row.due = phrase; row.due_status = 'confirmed'; this.touch(row);
+      this.errors.push({ type: 'time', label: TYPES.time[0], severity: 'high', row_key: row.key, unit_id: null, item_id: row.item_id, claim: 'الموعد: ' + phrase + ' — ' + row.text,
+        source_evidence: row.evidence, evidence_from: 'source', correct_value: 'لا يذكر المصدر موعداً لهذه المهمة (غير محدد).',
+        explanation: 'لم يحدد البرومبت ما يُكتب عند غياب الموعد، فاخترع النموذج موعداً وعرضه كحقيقة. التاريخ «' + phrase + '» مضاف من خارج المصدر.', cause_dim: 'unknown', fabricated: true });
+      this.assumptions.push({ kind: 'fabricated_deadline', value: phrase, for: row.text });
+    }
+  }
+  assumption(c, extra) {
+    const un = []; c.rows.forEach((r, i) => { if (r.cat === 'task' && r.owner === null && !this.touched[r.key] && r.item.speaker) un.push(i); });
+    if (un.length && this.canTouch(c.baseCount)) {
+      const row = c.rows[c.rng.pick(un)]; row.owner = row.item.speaker; row.owner_assumed = true; this.touch(row);
+      this.errors.push({ type: 'assumption', label: TYPES.assumption[0], severity: 'medium', row_key: row.key, unit_id: null, item_id: row.item_id, claim: 'المسؤول: ' + row.owner + ' — ' + row.text,
+        source_evidence: row.evidence, evidence_from: 'source', correct_value: 'المسؤول غير محدد في المصدر؛ ' + row.owner + ' هو المتحدث فقط وليس مكلَّفاً بالمهمة.',
+        explanation: 'لم يقصر البرومبت الإجابة على ما ورد في المصدر ولا طلب كتابة «غير محدد»، فافترض النموذج أن المتحدث هو المنفّذ.', cause_dim: 'source', fabricated: false });
+      this.assumptions.push({ kind: 'assumed_owner', value: row.owner, for: row.text });
+      if (!extra) return;
+    }
+    let tpl = [['decision', 'عقد اجتماع متابعة أسبوعي لمراجعة التقدم', null], ['task', 'إرسال محضر الاجتماع إلى جميع الحاضرين', c.truth.participants.length ? c.rng.pick(c.truth.participants) : null]];
+    tpl = tpl.filter((t) => !Text.contains(c.source, t[1]) && c.cats.includes(t[0]));
+    if (!tpl.length) tpl = [['decision', 'عقد اجتماع متابعة أسبوعي لمراجعة التقدم', null]].filter((t) => !Text.contains(c.source, t[1]));
+    if (!tpl.length) return;
+    const [cat, text, owner] = c.rng.pick(tpl);
+    const row = { key: ++this.seq, order: 20000, cat, text, owner, due: null, due_status: 'none', status: cat === 'task' ? 'مهمة مؤكدة' : 'قرار مؤكد', item_id: null, item: { speaker: null }, evidence: [], fabricated: true, owner_assumed: false };
+    c.rows.push(row);
+    this.errors.push({ type: 'assumption', label: TYPES.assumption[0], severity: 'high', row_key: row.key, unit_id: null, item_id: null, claim: text + (owner ? ' (المسؤول: ' + owner + ')' : ''),
+      source_evidence: [], evidence_from: 'source', correct_value: 'لا يوجد هذا البند في المصدر إطلاقاً.',
+      explanation: 'لم يقصر البرومبت الإجابة على المصدر ولم يشترط مراجعة كل بند، فأضاف النموذج بنداً مألوفاً في الاجتماعات يبدو منطقياً لكن لا سند له.', cause_dim: 'source', fabricated: true });
+    this.assumptions.push({ kind: 'fabricated_item', value: text, for: null });
+  }
+  omission(c) {
+    const cands = []; c.rows.forEach((r, i) => { if (r.item.condition && !this.touched[r.key]) cands.push(i); });
+    if (!cands.length || !this.canTouch(c.baseCount)) return;
+    const row = c.rows[c.rng.pick(cands)], full = row.text; row.text = row.item.core; this.touch(row);
+    this.omitted.push({ reason: 'omission', category: row.cat, text: row.item.condition, evidence: row.evidence });
+    this.errors.push({ type: 'omission', label: TYPES.omission[0], severity: 'medium', row_key: row.key, unit_id: null, item_id: row.item_id, claim: row.text,
+      source_evidence: row.evidence, evidence_from: 'source', correct_value: full + ' — المحذوف: «' + row.item.condition + '»',
+      explanation: 'لم يشترط البرومبت الحفاظ على الشروط والتفاصيل، فاختصر النموذج البند وأسقط شرطاً جوهرياً فبدا التنفيذ غير مشروط.', cause_dim: 'scope', fabricated: false });
+  }
+}
+
+// ---------------------------------------------------------------- Improved prompt
+const CLAUSES = {
+  task: 'استخرج القرارات المؤكدة والمهام (مع المسؤول عن كل مهمة وموعدها) والمقترحات غير المعتمدة والنقاط غير المحسومة من محضر الاجتماع.',
+  source: 'اعتمد على نص المحضر فقط، ولا تضف أي معلومة أو اسم أو تاريخ من خارجه.',
+  scope: 'اشمل جميع البنود دون حذف، وحافظ على الشروط والتفاصيل المهمة المرتبطة بكل بند.',
+  format: 'اعرض النتيجة في جدول بأعمدة: النوع | البند | المسؤول | الموعد | الحالة.',
+  unknown: 'إذا كانت أي معلومة (مسؤول أو موعد) غير مذكورة أو غير مؤكدة في المحضر فاكتب «غير محدد» أو «تقريبي» ولا تخمّنها.',
+  distinction: 'ميّز بين القرارات المؤكدة والمقترحات غير المعتمدة والنقاط غير المحسومة، ولا تحوّل أي مقترح أو نقطة مفتوحة إلى قرار.',
+  verification: 'قبل تقديم الإجابة راجع كل بند مقابل نص المحضر واحذف أي بند أو معلومة لا يسندها المصدر.',
+};
+function improve(prompt, analysis, errors = []) {
+  const prev = {}; errors.forEach((e) => (prev[e.cause_dim] ||= []).push(e.label));
+  const order = Object.keys(CLAUSES), dims = [...new Set([...Object.keys(prev), ...analysis.gaps])].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  let text = prompt.trim(); if (text && !/[.!؟?]$/u.test(text)) text += '.'; const additions = [];
+  for (const d of dims) {
+    if (!CLAUSES[d]) continue; const lv = analysis.dimensions[d]?.level ?? 0; if (lv >= .75 && !prev[d]) continue;
+    text += ' ' + CLAUSES[d]; additions.push({ dimension: d, label: DIMENSIONS[d].label, clause: CLAUSES[d], prevents: [...new Set(prev[d] || [])] });
+  }
+  return { prompt: text.trim(), additions };
+}
+
+return { Text, Rng, parseMeeting, analyze, Simulator, improve, DIMENSIONS };
+})();
+if (typeof module !== 'undefined') module.exports = PTL;
+
+</script>
+<script>
+const SAMPLE = "العنوان: اجتماع مراجعة إطلاق تطبيق «رحلتي» للتوصيل\nالتاريخ: 2026-03-02\nالحضور: أحمد، سارة، خالد، منى، ياسر\n\nأحمد: نبدأ بمراجعة موعد الإطلاق، والفريق الفني يقول إن النسخة التجريبية شبه جاهزة.\nسارة: تقرر اعتماد الإطلاق التجريبي في مدينة جدة فقط خلال المرحلة الأولى.\nخالد: أقترح أن نضيف الدفع عبر المحفظة الإلكترونية قبل الإطلاق.\nمنى: لم نحسم هذه النقطة بعد، ونحتاج إلى معرفة تكلفة ربط المحفظة.\nياسر: سأرسل تقرير الاختبارات إلى الجميع يوم الأحد.\nسارة: وتقرر أن تتولى منى إعداد عرض الإطلاق قبل الخميس القادم، بشرط أن يوافق قسم التسويق على النص.\nأحمد: أقترح أن يتولى خالد التواصل مع شركة الدفع.\nسارة: تمت الموافقة على ذلك.\nخالد: سأحاول إنهاء مراجعة العقد مع شركة الدفع بنهاية الأسبوع، لكن هذا الموعد تقريبي.\nمنى: أقترح تأجيل حملة الإعلانات إلى أبريل.\nأحمد: رفضنا هذا الاقتراح لأن الحملة مرتبطة بعقد موقّع.\nياسر: سيتم إرسال الدعوات للمدن الأخرى لاحقاً دون تحديد موعد.\nسارة: موعد اجتماع المتابعة القادم لم يُحدد بعد.\nأحمد: شكراً للجميع على الحضور.";
+const EX = {
+  ex1: 'استخرج مخرجات الاجتماع.',
+  ex2: 'استخرج القرارات والمهام والمواعيد من النص في جدول',
+  ex3: 'استخرج جميع القرارات المؤكدة والمهام والمسؤولين والمواعيد من المصدر فقط. لا تفترض أي معلومة غير مذكورة، ولا تحوّل المقترحات إلى قرارات، وميّز بين المعلومات المؤكدة وغير المحسومة. إذا كانت معلومة مجهولة فاكتب أنها غير محددة. حافظ على جميع التفاصيل المهمة، واستخدم جدولاً واضحاً، ثم راجع كل معلومة مقابل المصدر قبل تقديم الإجابة.'
+};
+(() => {
+'use strict';
+const $ = (id) => document.getElementById(id);
+const el = (t, a = {}, ...k) => { const n = document.createElement(t); for (const [x, v] of Object.entries(a)) { if (v == null || v === false) continue; if (x === 'class') n.className = v; else if (x === 'text') n.textContent = v; else if (x.startsWith('on')) n.addEventListener(x.slice(2), v); else n.setAttribute(x, v === true ? '' : v); } for (const c of k.flat()) { if (c == null || c === false) continue; n.append(c.nodeType ? c : document.createTextNode(String(c))); } return n; };
+const clear = (n) => { while (n.firstChild) n.removeChild(n.firstChild); return n; };
+const toast = (m) => { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 4500); };
+const hash = (s) => { let h = 0x811c9dc5; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; };
+
+const sim = new PTL.Simulator();
+const S = { title: '', source: '', truth: null, attempts: [], cur: null };
+
+function begin(title, source) {
+  S.title = title; S.source = source.trim(); S.truth = PTL.parseMeeting(S.source); S.attempts = []; S.cur = null;
+  $('srcTitle').textContent = title; $('srcView').textContent = S.source; $('prm').value = '';
+  ['res', 'evP', 'impP', 'revP', 'hist'].forEach((i) => { $(i).hidden = true; }); $('setup').hidden = true;
+}
+function run() {
+  const prompt = $('prm').value.trim();
+  if (prompt.length < 2) return toast('اكتب برومبتاً أولاً.');
+  const no = S.attempts.length + 1, analysis = PTL.analyze(prompt);
+  const plan = sim.run(S.truth, analysis, S.source, hash(S.source + '|' + prompt + '|' + no));
+  const a = { no, prompt, analysis, plan, improved: PTL.improve(prompt, analysis, plan.errors), evaluated: false, revealed: false, verdict: null };
+  S.attempts.push(a); show(a);
+}
+function show(a) {
+  S.cur = a; ['evP', 'impP', 'revP'].forEach((i) => { $(i).hidden = true; });
+  $('res').hidden = false; $('attTag').textContent = '— المحاولة ' + a.no; $('prm').value = a.prompt;
+  draw(a.plan, []); document.querySelectorAll('input[name=vd]').forEach((r) => { r.checked = r.value === a.verdict; });
+  $('srcView').textContent = S.source; hist();
+}
+function draw(plan, errs) {
+  const box = clear($('out')); box.classList.toggle('allbad', errs.some((e) => e.unit_id === '*'));
+  const by = {}; errs.forEach((e, i) => { if (e.unit_id && e.unit_id !== '*') (by[e.unit_id] ||= []).push(i + 1); });
+  if (!plan.units.length) return box.append(el('p', { text: plan.text }));
+  const tags = (u) => (by[u.id] || []).map((n) => el('span', { class: 'n', text: '#' + n }));
+  if (plan.style === 'prose') plan.units.forEach((u) => box.append(el('p', { class: by[u.id] ? 'bad' : null }, u.cells[0], tags(u))));
+  else box.append(el('table', {}, el('thead', {}, el('tr', {}, plan.headers.map((h) => el('th', { text: h })))),
+    el('tbody', {}, plan.units.map((u) => el('tr', { class: by[u.id] ? 'bad' : null }, u.cells.map((c, i) => el('td', {}, c, i === 1 ? tags(u) : null)))))));
+  if (plan.style === 'json') box.append(el('details', {}, el('summary', { text: 'النص الخام (JSON)' }), el('pre', { class: 'box', text: plan.text })));
+}
+const dimRow = (d) => { const b = el('i'); b.style.width = Math.round(d.level * 100) + '%'; return el('li', { class: d.status }, el('div', {}, el('b', { text: d.label }), ' — ' + Math.round(d.level * 100) + '%'), el('div', { class: 'bar' }, b), el('small', { text: d.detail })); };
+const adds = (list) => list.length ? el('ul', {}, list.map((x) => el('li', {}, el('b', { text: x.label + ': ' }), x.clause, x.prevents.length ? el('small', { class: 'muted', text: ' (يمنع: ' + x.prevents.join('، ') + ')' }) : null))) : null;
+
+function evaluate() {
+  const a = need(); a.evaluated = true; const r = a.analysis, p = clear($('evP')); p.hidden = false;
+  p.append(el('h2', { text: 'تقييم اكتمال البرومبت' }),
+    el('div', { class: 'score' }, el('b', { text: r.score + ' / 100' }), el('span', { class: 'tag', text: r.mode === 'precise' ? 'التنفيذ الدقيق' : 'محاكاة استغلال الثغرات' })),
+    el('ul', { class: 'dims' }, Object.values(r.dimensions).map(dimRow)),
+    r.gaps.length ? el('div', {}, el('h3', { text: 'الثغرات القابلة للاستغلال' }), el('ul', {}, r.gaps.map((g) => el('li', {}, el('b', { text: r.dimensions[g].label + ': ' }), PTL.DIMENSIONS[g].gap)))) : el('p', { text: 'لم تُرصد ثغرات جوهرية في التعليمات.' }),
+    el('p', { class: 'hint', text: 'تقييم آلي تقريبي يعتمد على قواعد لغوية؛ قد يخطئ مع الصياغات غير المألوفة.' }));
+  hist(); p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function improveNow() {
+  const a = need(), r = a.revealed ? a.improved : PTL.improve(a.prompt, a.analysis, []), p = clear($('impP')); p.hidden = false;
+  p.append(el('h2', { text: 'البرومبت المحسّن' }), el('div', { class: 'box', text: r.prompt }), adds(r.additions) || el('p', { text: 'لا إضافات مقترحة.' }),
+    el('div', { class: 'row' }, el('button', { class: 'main', type: 'button', onclick: () => { $('prm').value = r.prompt; $('prm').focus(); toast('وُضع في حقل التعليمات. اضغط «تنفيذ التعليمات».'); } }, 'استخدمه في المحاولة التالية')));
+  p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function reveal() {
+  const a = need(), v = document.querySelector('input[name=vd]:checked'); if (v) a.verdict = v.value;
+  a.revealed = a.evaluated = true; const pl = a.plan, errs = pl.errors; draw(pl, errs);
+  const p = clear($('revP')), s = pl.stats; p.hidden = false;
+  p.append(el('h2', { text: 'كشف الأخطاء' }));
+  if (a.verdict && a.verdict !== 'unsure') { const ok = (a.verdict === 'wrong') === errs.length > 0; p.append(el('p', { class: 'meta', text: ok ? '✔ حكمك قبل الكشف كان متوافقاً مع الواقع.' : '✘ حكمك قبل الكشف لم يكن متوافقاً مع الواقع، وهذا ما يتدرب عليه المختبر.' })); }
+  p.append(el('p', { class: 'meta', text: 'بنود صحيحة: ' + s.rows_correct + ' من ' + s.rows_expected + ' متوقعة (' + s.accuracy_percent + '%) — أخطاء مسجلة: ' + s.error_count }));
+  if (!errs.length) p.append(el('div', { class: 'err' }, el('b', { text: pl.no_error_note })));
+  errs.forEach((e, i) => p.append(errCard(e, i + 1)));
+  if (pl.omitted.length) p.append(el('h3', { text: 'المعلومات المحذوفة' }), el('ul', {}, pl.omitted.map((o) => el('li', { text: '[' + (o.category || '') + '] ' + o.text }))));
+  if (pl.assumptions.length) p.append(el('h3', { text: 'الافتراضات المضافة من خارج المصدر' }), el('ul', {}, pl.assumptions.map((o) => el('li', { text: o.value + (o.for ? ' ← ' + o.for : '') }))));
+  p.append(el('h3', { text: 'الإجابة الصحيحة المستندة إلى المصدر' }), el('div', { class: 'out' }, el('table', {}, el('thead', {}, el('tr', {}, pl.correct.headers.map((h) => el('th', { text: h })))), el('tbody', {}, pl.correct.units.map((u) => el('tr', {}, u.cells.map((c) => el('td', { text: c }))))))));
+  p.append(el('h3', { text: 'البرومبت المحسّن الذي كان يمنع الخطأ' }), el('div', { class: 'box', text: a.improved.prompt }), adds(a.improved.additions),
+    el('div', { class: 'row' }, el('button', { class: 'main', type: 'button', onclick: () => { $('prm').value = a.improved.prompt; $('prm').focus(); toast('وُضع في حقل التعليمات.'); } }, 'جرّبه في محاولة جديدة')));
+  hist(); p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function errCard(e, n) {
+  const ev = e.source_evidence.length ? e.source_evidence.map((q) => el('blockquote', { text: q })) : [el('p', { text: 'لا يوجد في المصدر ما يدعم هذا البند.' })];
+  return el('div', { class: 'err' }, el('header', {}, el('span', { text: '#' + n + ' ' + e.label }), el('span', { class: 'tag', text: e.fabricated ? 'مضاف من خارج المصدر' : 'تحريف لما في المصدر' })),
+    el('div', { class: 'cmp' }, el('div', { class: 'a' }, el('h4', { text: 'ما قاله النموذج' }), el('div', { text: e.claim })), el('div', { class: 'b' }, el('h4', { text: e.evidence_from === 'prompt' ? 'ما في البرومبت' : 'ما في المصدر' }), ...ev)),
+    el('p', { class: 'meta' }, el('b', { text: 'الصحيح: ' }), e.correct_value), el('p', { class: 'meta' }, el('b', { text: 'لماذا أمكن الخطأ: ' }), e.explanation),
+    e.source_evidence.length ? el('div', { class: 'row' }, el('button', { class: 'sm', type: 'button', onclick: () => mark(e.source_evidence) }, 'أظهر في المصدر')) : null);
+}
+function mark(quotes) {
+  const t = S.source, sp = []; quotes.forEach((q) => { const i = t.indexOf(q); if (i >= 0) sp.push([i, i + q.length]); }); sp.sort((a, b) => a[0] - b[0]);
+  const v = clear($('srcView')); let pos = 0, first = null;
+  sp.forEach(([s, e]) => { if (s < pos) return; v.append(document.createTextNode(t.slice(pos, s))); const m = el('mark', { text: t.slice(s, e) }); first ||= m; v.append(m); pos = e; });
+  v.append(document.createTextNode(t.slice(pos))); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+function hist() {
+  $('hist').hidden = !S.attempts.length; const ol = clear($('hl'));
+  S.attempts.forEach((a) => ol.append(el('li', { class: a === S.cur ? 'cur' : null }, el('b', { text: 'محاولة ' + a.no }), el('span', { class: 'sn', text: a.prompt }),
+    el('span', { class: 'muted', text: [a.evaluated ? 'الدرجة ' + a.analysis.score : '', a.revealed ? 'الأخطاء ' + a.plan.errors.length : ''].filter(Boolean).join(' — ') }), el('button', { class: 'sm', type: 'button', onclick: () => show(a) }, 'عرض'))));
+  const box = clear($('cmp')), n = S.attempts.length; box.hidden = n < 2; if (n < 2) return;
+  const o = S.attempts[n - 2], c = S.attempts[n - 1]; box.append(el('b', { text: 'مقارنة المحاولة ' + o.no + ' بالمحاولة ' + c.no }));
+  if (o.evaluated && c.evaluated) {
+    const d = c.analysis.score - o.analysis.score; box.append(el('p', { class: d >= 0 ? 'up' : 'down', text: 'الدرجة: ' + o.analysis.score + ' ← ' + c.analysis.score + ' (' + (d >= 0 ? '+' : '') + d + ')' }));
+    const ch = Object.keys(c.analysis.dimensions).map((k) => [c.analysis.dimensions[k].label, Math.round((c.analysis.dimensions[k].level - o.analysis.dimensions[k].level) * 100)]).filter((x) => x[1]);
+    if (ch.length) box.append(el('ul', {}, ch.map(([l, v]) => el('li', { class: v > 0 ? 'up' : 'down', text: l + ': ' + (v > 0 ? '+' : '') + v + '%' }))));
+  }
+  if (o.revealed && c.revealed) box.append(el('p', { text: 'الأخطاء: ' + o.plan.errors.length + ' ← ' + c.plan.errors.length }));
+  if (!(o.evaluated && c.evaluated && o.revealed && c.revealed)) box.append(el('p', { class: 'hint', text: 'اضغط «تقييم البرومبت» و«كشف الأخطاء» للمحاولتين لتظهر المقارنة كاملة.' }));
+}
+const need = () => { if (!S.cur) { toast('نفّذ محاولة أولاً.'); throw new Error('no attempt'); } return S.cur; };
+const guard = (f) => () => { try { f(); } catch (e) { if (e.message !== 'no attempt') toast('حدث خطأ: ' + e.message); } };
+
+// setup
+const cnt = () => { $('srcCount').textContent = '(' + $('srcTxt').value.length + ' / 20000)'; };
+const syncSrc = () => { const s = $('srcSel').value === 'sample'; $('srcTxt').readOnly = s; if (s) $('srcTxt').value = SAMPLE; else if ($('srcTxt').value === SAMPLE) $('srcTxt').value = ''; cnt(); };
+$('newBtn').addEventListener('click', () => { $('setup').hidden = false; syncSrc(); $('setup').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
+$('cancelBtn').addEventListener('click', () => { $('setup').hidden = true; });
+$('srcSel').addEventListener('change', syncSrc); $('srcTxt').addEventListener('input', cnt);
+$('startBtn').addEventListener('click', () => {
+  const sample = $('srcSel').value === 'sample', t = sample ? SAMPLE : $('srcTxt').value.trim();
+  if (t.length < 40 || t.length > 20000) return toast('نص المصدر يجب أن يكون بين 40 و20000 حرف.');
+  begin(sample ? 'محضر تجريبي' : 'محضر مخصص', t);
+});
+['ex1', 'ex2', 'ex3'].forEach((k) => $(k).addEventListener('click', () => { $('prm').value = EX[k]; $('prm').focus(); }));
+$('runBtn').addEventListener('click', guard(run)); $('evBtn').addEventListener('click', guard(evaluate));
+$('impBtn').addEventListener('click', guard(improveNow)); $('revBtn').addEventListener('click', guard(reveal));
+$('retryBtn').addEventListener('click', () => { ['evP', 'impP', 'revP'].forEach((i) => { $(i).hidden = true; }); $('srcView').textContent = S.source; $('prm').focus(); toast('عدّل التعليمات ثم اضغط «تنفيذ التعليمات»؛ تُسجَّل محاولة جديدة منفصلة.'); });
+
+begin('محضر تجريبي', SAMPLE);
+})();
+</script>

@@ -13,12 +13,18 @@ final class Rng
         $this->s = $seed & 0xFFFFFFFF;
     }
 
+    /** ضرب 32 بت دقيق (دون تجاوز 64 بت) ليطابق Math.imul في JavaScript */
+    private static function mul32(int $a, int $b): int
+    {
+        return ((($a & 0xFFFF) * $b) + (((($a >> 16) * $b) & 0xFFFF) << 16)) & 0xFFFFFFFF;
+    }
+
     public function float(): float
     {
         $this->s = ($this->s + 0x6D2B79F5) & 0xFFFFFFFF;
         $t = $this->s;
-        $t = (($t ^ ($t >> 15)) * ($t | 1)) & 0xFFFFFFFF;
-        $t ^= ($t + ((($t ^ ($t >> 7)) * ($t | 61)) & 0xFFFFFFFF)) & 0xFFFFFFFF;
+        $t = self::mul32($t ^ ($t >> 15), $t | 1);
+        $t = ($t ^ (($t + self::mul32($t ^ ($t >> 7), $t | 61)) & 0xFFFFFFFF)) & 0xFFFFFFFF;
         return ((($t ^ ($t >> 14)) & 0xFFFFFFFF)) / 4294967296;
     }
 

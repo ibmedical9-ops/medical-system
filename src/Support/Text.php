@@ -43,7 +43,7 @@ final class Text
     public static function rx(string $alternatives, string $wrapL = '', string $wrapR = ''): string
     {
         $alts = array_map(
-            static fn(string $a) => preg_quote(self::norm(trim($a)), '/'),
+            static fn(string $a) => preg_quote(self::norm($a), '/'),
             explode('|', $alternatives)
         );
         // preg_quote يهرّب المسافة؟ لا؛ لكنه يهرّب '-' و '/' فقط ضمن ما نحتاج.

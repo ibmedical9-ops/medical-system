@@ -86,7 +86,7 @@ final class MeetingParser
             $isReject = Text::has($norm, 'رفضنا|تم رفض|تم رفضه|مرفوض|لم نوافق|لا نوافق علي|لم يتم قبول|رفض الاقتراح|رفضت');
             $approveCue = Text::has($norm, 'تمت الموافقه|وافق الجميع|اتفق الجميع|اتفقنا|تم الاتفاق|نوافق جميعا|وافقنا|لا اعتراض|تمت الموافقة');
             $refWord = Text::has($norm, 'ذلك|هذا|الاقتراح|المقترح|ما سبق|الفكره');
-            $isApprovalRef = $approveCue && !$isOpen && ($refWord || mb_strlen($norm) < 28) && !Text::has($norm, 'علي (?:ان|تاجيل|اعتماد|اختيار)');
+            $isApprovalRef = $approveCue && !$isOpen && ($refWord || mb_strlen($norm) < 28) && !preg_match('/علي (?:ان|تاجيل|اعتماد|اختيار)/u', $norm);
             $isProposal = Text::has($norm, 'اقترح|اقتراح|ماذا لو|ما رايكم|يمكننا ان|هل نستطيع|افضل ان|اري ان|اظن ان|ممكن ان|فكره');
             $isDecision = !$isOpen && Text::has($norm, 'تقرر|قررنا|قرر |تم الاتفاق علي|اتفقنا علي|تمت الموافقه علي|وافقنا علي|تم اعتماد|اعتمدنا|تم اختيار|اخترنا|القرار');
 
