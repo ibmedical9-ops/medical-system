@@ -84,54 +84,70 @@ blockquote{margin:4px 0;padding-inline-start:10px;border-inline-start:3px solid 
 #toast{position:fixed;inset-inline:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:480px;margin-inline:auto;background:var(--trap);color:var(--bg);padding:10px 14px;border-radius:10px;z-index:5}
 footer{color:var(--muted);font-size:.85rem;text-align:center;padding-top:16px}
 @media (prefers-reduced-motion:no-preference){.panel{transition:border-color .15s}}
-</style>
 
+/* ---- محادثة ---- */
+body{padding-block:0}
+.wrap{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+.thread{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;padding-block:8px 24px;flex:1}
+.welcome{text-align:center;padding-block:28px 8px}
+.welcome h2{font-size:1.5rem;margin-bottom:8px}
+.welcome p{color:var(--muted);max-width:56ch;margin:6px auto}
+.row.center{justify-content:center}
+.msg{min-width:0}
+.msg.user{justify-self:start;max-width:min(100%,760px);width:100%}
+.bub{background:var(--accent);color:var(--accent-ink);border-radius:14px;padding:12px 16px;white-space:pre-wrap;word-break:break-word}
+.bub.note{background:var(--sunk);color:var(--muted);font-size:.92rem}
+.msg.user details{margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 12px}
+.msg.user summary{cursor:pointer;color:var(--muted);font-size:.9rem}
+.msg.user .source{margin-top:8px}
+.msg.ai{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.pan{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-top:14px}
+.pan>section{border-top:1px solid var(--line);padding-top:12px}
+.composer{position:sticky;bottom:0;background:var(--bg);padding-block:10px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+.srcbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:.9rem}
+.srcbar .tag{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srced{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px}
+.srced textarea{min-height:180px;max-height:45vh}
+.inbox{display:flex;gap:8px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 8px 8px 10px}
+.inbox:focus-within{border-color:var(--accent)}
+.inbox textarea{border:0;background:transparent;min-height:46px;max-height:42vh;resize:none;padding:8px;overflow-y:auto}
+.inbox textarea:focus-visible{outline:none}
+.send{flex:none;width:44px;height:44px;padding:0;border-radius:12px;display:grid;place-items:center;font-size:1.2rem;line-height:1}
+.split{min-height:1.6em;margin:6px 4px 0}
+</style>
 <div class="wrap">
 <header class="top">
   <div class="brand"><span class="mark-logo" aria-hidden="true">&lt;/&gt;</span><div><h1>Prompt Trap Lab</h1><p>مختبر فخاخ البرومبتات</p></div></div>
-  <button id="newBtn" type="button">بدء تجربة جديدة</button>
+  <button id="newBtn" type="button">محادثة جديدة</button>
 </header>
-<div class="notice" role="note"><span>نسخة تجريبية داخل المتصفح: كل شيء يعمل محلياً في صفحتك، لا تُرسل أي بيانات، ولا يُحفظ شيء بعد إغلاق الصفحة. المخرجات تولّدها محاكاة بقواعد لغوية وليست نموذجاً لغوياً حقيقياً، ومفتاح الإجابة موجود في ذاكرة الصفحة ولا يُحمى كما في النسخة الكاملة.</span></div>
+<div class="notice" role="note"><span>نسخة تجريبية داخل المتصفح: كل شيء يعمل محلياً في صفحتك ولا تُرسل أي بيانات ولا يُحفظ شيء بعد إغلاقها. المخرجات تولّدها محاكاة بقواعد لغوية وليست نموذجاً لغوياً حقيقياً، ومفتاح الإجابة في ذاكرة الصفحة ولا يُحمى كما في النسخة الكاملة.</span></div>
 <div id="toast" hidden role="status"></div>
 
-<div class="stack">
-  <section id="setup" class="panel" hidden>
-    <div class="head"><h2>تجربة جديدة</h2></div>
-    <label class="lbl" for="srcSel">المصدر</label>
-    <select id="srcSel"><option value="sample">محضر تجريبي: اجتماع مراجعة إطلاق تطبيق «رحلتي»</option><option value="custom">محضر من عندي (ألصقه أدناه)</option></select>
-    <label class="lbl" for="srcTxt" style="margin-top:10px">نص المحضر <span id="srcCount" class="muted"></span></label>
-    <textarea id="srcTxt" style="min-height:190px" placeholder="الصق المحضر هنا. الصيغة المفضلة: «اسم المتحدث: كلامه» في كل سطر، وسطر «الحضور: ...» في البداية."></textarea>
-    <p class="hint">يُعامل النص كبيانات للتحليل فقط؛ أي تعليمات مكتوبة داخله لا تغيّر سلوك النظام.</p>
-    <div class="row"><button id="startBtn" class="main" type="button">ابدأ</button><button id="cancelBtn" type="button">إلغاء</button></div>
-  </section>
-
-  <div class="cols">
-    <section class="panel"><div class="head"><h2>المصدر</h2><span id="srcTitle" class="tag"></span></div><pre id="srcView" class="source" tabindex="0"></pre></section>
-    <section class="panel">
-      <div class="head"><h2>تعليماتك</h2></div>
-      <label class="lbl" for="prm">اكتب ما تريده من النموذج <span class="muted">(من عندك)</span></label>
-      <textarea id="prm" maxlength="4000" placeholder="اكتب هنا ما تريد من النموذج أن يفعله بالمحضر…"></textarea>
-      <div class="row"><span class="hint">أمثلة جاهزة للتجربة:</span>
-        <button class="chip" id="ex1" type="button">غامض</button><button class="chip" id="ex2" type="button">متوسط</button><button class="chip" id="ex3" type="button">دقيق</button></div>
-      <div class="row"><button id="runBtn" class="main" type="button">تنفيذ التعليمات</button></div>
-    </section>
+<main id="thread" class="thread" aria-live="polite">
+  <div id="welcome" class="welcome">
+    <h2>الصق المحضر واكتب تعليماتك في صندوق واحد</h2>
+    <p>اكتب في الصندوق أدناه محضر الاجتماع وطلبك معاً. يفصل المختبر بينهما تلقائياً، ويمكنك تعديل المصدر في أي وقت من شريط «المصدر» فوق الصندوق.</p>
+    <p class="hint">للفصل اليدوي ضع سطراً يحوي <b>---</b> بين الاثنين.</p>
+    <div class="row center"><span class="hint">جرّب مثالاً:</span>
+      <button class="chip" id="ex1" type="button">تعليمات غامضة</button><button class="chip" id="ex2" type="button">تعليمات متوسطة</button><button class="chip" id="ex3" type="button">تعليمات دقيقة</button></div>
   </div>
+</main>
 
-  <section id="res" class="panel" hidden>
-    <div class="head"><h2>نتيجة النموذج <span id="attTag" class="muted"></span></h2><span class="tag sim">محاكاة محلية — ليست نموذجاً لغوياً</span></div>
-    <div id="out" class="out"></div>
-    <fieldset><legend>هل ترى هذه النتيجة صحيحة؟ (قرارك قبل الكشف)</legend>
-      <label><input type="radio" name="vd" value="correct"> صحيحة</label><label><input type="radio" name="vd" value="wrong"> فيها أخطاء</label><label><input type="radio" name="vd" value="unsure"> لست متأكداً</label></fieldset>
-    <div class="row"><button id="retryBtn" type="button">محاولة أخرى</button><button id="revBtn" class="reveal" type="button">كشف الأخطاء</button><button id="evBtn" type="button">تقييم البرومبت</button><button id="impBtn" type="button">تحسين البرومبت</button></div>
-  </section>
-  <section id="evP" class="panel" hidden></section>
-  <section id="impP" class="panel" hidden></section>
-  <section id="revP" class="panel" hidden></section>
-  <section id="hist" class="panel" hidden><h2>سجل المحاولات</h2><div id="cmp" class="cmpbox" hidden style="margin-top:10px"></div><ol id="hl" class="hist" style="margin-top:10px"></ol></section>
+<div class="composer">
+  <div class="srcbar"><span id="srcPill" class="tag"></span><button id="srcEditBtn" class="sm" type="button">تعديل المصدر</button></div>
+  <div id="srcEd" class="srced" hidden>
+    <label class="lbl" for="srcTxt">المصدر (محضر الاجتماع) <span id="srcCount" class="muted"></span></label>
+    <textarea id="srcTxt" placeholder="الصق المحضر هنا. الصيغة المفضلة: «اسم المتحدث: كلامه» في كل سطر."></textarea>
+    <div class="row"><button id="srcSave" class="main" type="button">حفظ المصدر</button><button id="srcCancel" type="button">إلغاء</button><span class="hint">يُعامل النص كبيانات فقط؛ أي تعليمات داخله لا تغيّر سلوك النظام.</span></div>
+  </div>
+  <div class="inbox">
+    <button id="send" class="main send" type="button" aria-label="إرسال">↑</button>
+    <textarea id="in" rows="1" maxlength="24000" placeholder="الصق المحضر واكتب تعليماتك هنا…" aria-label="المحضر والتعليمات"></textarea>
+  </div>
+  <div id="split" class="hint split"></div>
 </div>
 <footer>التقييم الآلي تقريبي ولا يضمن جودة النتيجة مع نموذج حقيقي.</footer>
 </div>
-
 <script>
 /* Prompt Trap Lab — نسخة JavaScript من المحرك (مطابقة منطقياً لـ src/Domain و src/Support في PHP) */
 const PTL = (() => {
@@ -589,7 +605,45 @@ function improve(prompt, analysis, errors = []) {
   return { prompt: text.trim(), additions };
 }
 
-return { Text, Rng, parseMeeting, analyze, Simulator, improve, DIMENSIONS };
+
+// ---------------------------------------------------------------- فصل المحضر عن التعليمات (صندوق إدخال واحد)
+// قاعدة: السطر «تسمية: كلام» يُعدّ من المحضر إن كانت التسمية عنواناً معروفاً (الحضور/التاريخ...) أو اسم متحدث
+// (وارداً في «الحضور» أو متكرراً أو، عند غياب ذلك، تسميات قصيرة متعددة). الفقرات (يفصلها سطر فارغ) ذات الأغلبية من هذه الأسطر
+// تذهب إلى المحضر وما عداها إلى التعليمات. سطر --- أو === يحدد الفصل صراحةً ويتفوق على التخمين.
+function splitInput(raw) {
+  const text = String(raw || '').replace(/\r\n?/g, '\n').trim();
+  if (!text) return { source: '', prompt: '', how: 'empty' };
+  const lines = text.split('\n');
+  const labelOf = (l) => { const m = /^\s*([^:：\n]{1,30})[:：]\s*(\S.*)?$/u.exec(l); if (!m) return null; const lab = m[1].trim(); return lab.split(/\s+/).length > 3 ? null : { lab, rest: m[2] || '' }; };
+  const hdr = HEADERS.map(Text.norm), att = ['الحضور', 'المشاركون', 'المشاركين'].map(Text.norm);
+  const counts = {}, known = new Set();
+  for (const l of lines) {
+    const x = labelOf(l); if (!x) continue; const n = Text.norm(x.lab);
+    if (hdr.includes(n)) { if (att.includes(n)) x.rest.split(/\s*[،,;؛]\s*|\s+و(?=\s)\s*/u).forEach((a) => { const t = Text.norm(a.trim()); if (t) known.add(t.split(' ')[0]); }); }
+    else counts[n] = (counts[n] || 0) + 1;
+  }
+  for (const [k, v] of Object.entries(counts)) if (v >= 2) known.add(k.split(' ')[0]);
+  if (!known.size && Object.keys(counts).length >= 2) for (const k of Object.keys(counts)) if (k.split(' ').length <= 2 && k.length <= 14) known.add(k.split(' ')[0]);
+  const isSrc = (l) => { const x = labelOf(l); if (!x) return false; const n = Text.norm(x.lab); return hdr.includes(n) || known.has(n) || known.has(n.split(' ')[0]); };
+  const frac = (blk) => { const ls = blk.split('\n').filter((l) => l.trim()); return ls.length ? ls.filter(isSrc).length / ls.length : 0; };
+  const di = lines.findIndex((l) => /^\s*(?:-{3,}|={3,}|#{3,}|\*{3,})\s*$/.test(l));
+  if (di >= 0) {
+    const a = lines.slice(0, di).join('\n').trim(), b = lines.slice(di + 1).join('\n').trim();
+    return frac(a) >= frac(b) ? { source: a, prompt: b, how: 'delimiter' } : { source: b, prompt: a, how: 'delimiter' };
+  }
+  const src = [], prm = [];
+  for (const para of text.split(/\n\s*\n/)) {
+    const ls = para.split('\n').filter((l) => l.trim());
+    if (!ls.length) continue;
+    if (ls.filter(isSrc).length / ls.length >= 0.5) {
+      let a = 0, b = ls.length; while (a < b && !isSrc(ls[a])) a++; while (b > a && !isSrc(ls[b - 1])) b--;
+      if (a > 0) prm.push(ls.slice(0, a).join('\n')); src.push(ls.slice(a, b).join('\n')); if (b < ls.length) prm.push(ls.slice(b).join('\n'));
+    } else prm.push(ls.join('\n'));
+  }
+  return { source: src.join('\n\n'), prompt: prm.join('\n').trim(), how: src.length ? 'auto' : 'none' };
+}
+
+return { Text, Rng, parseMeeting, analyze, Simulator, improve, DIMENSIONS, splitInput };
 })();
 if (typeof module !== 'undefined') module.exports = PTL;
 
@@ -608,34 +662,78 @@ const el = (t, a = {}, ...k) => { const n = document.createElement(t); for (cons
 const clear = (n) => { while (n.firstChild) n.removeChild(n.firstChild); return n; };
 const toast = (m) => { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 4500); };
 const hash = (s) => { let h = 0x811c9dc5; for (const c of s) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; };
-
+const lineCount = (s) => s.split('\n').filter((l) => l.trim()).length;
 const sim = new PTL.Simulator();
-const S = { title: '', source: '', truth: null, attempts: [], cur: null };
+const S = { source: '', attempts: [] };
+const MIN = 40, MAX = 20000;
 
-function begin(title, source) {
-  S.title = title; S.source = source.trim(); S.truth = PTL.parseMeeting(S.source); S.attempts = []; S.cur = null;
-  $('srcTitle').textContent = title; $('srcView').textContent = S.source; $('prm').value = '';
-  ['res', 'evP', 'impP', 'revP', 'hist'].forEach((i) => { $(i).hidden = true; }); $('setup').hidden = true;
+const thread = $('thread');
+const push = (node) => { const w = $('welcome'); if (w) w.remove(); thread.append(node); node.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+const note = (text) => push(el('div', { class: 'msg user' }, el('div', { class: 'bub note', text })));
+
+function srcUI() {
+  $('srcPill').textContent = S.source ? 'المصدر الحالي: ' + lineCount(S.source) + ' سطراً · ' + S.source.length + ' حرفاً' : 'لا يوجد مصدر بعد: الصقه في الصندوق مع تعليماتك';
+  $('srcEditBtn').textContent = S.source ? 'تعديل المصدر' : 'إضافة مصدر';
 }
-function run() {
-  const prompt = $('prm').value.trim();
-  if (prompt.length < 2) return toast('اكتب برومبتاً أولاً.');
-  const no = S.attempts.length + 1, analysis = PTL.analyze(prompt);
-  const plan = sim.run(S.truth, analysis, S.source, hash(S.source + '|' + prompt + '|' + no));
-  const a = { no, prompt, analysis, plan, improved: PTL.improve(prompt, analysis, plan.errors), evaluated: false, revealed: false, verdict: null };
-  S.attempts.push(a); show(a);
+function preview() {
+  const raw = $('in').value; const box = $('split');
+  if (!raw.trim()) { box.textContent = ''; return; }
+  const r = PTL.splitInput(raw);
+  const parts = [];
+  if (r.source) parts.push('المصدر: ' + lineCount(r.source) + ' سطراً'); else parts.push(S.source ? 'بلا مصدر جديد (يُستخدم المصدر الحالي)' : 'لم أجد محضراً في النص');
+  parts.push(r.prompt ? 'التعليمات: ' + r.prompt.length + ' حرفاً' : 'لا تعليمات بعد');
+  box.textContent = 'تعرّفتُ على — ' + parts.join(' + ');
 }
-function show(a) {
-  S.cur = a; ['evP', 'impP', 'revP'].forEach((i) => { $(i).hidden = true; });
-  $('res').hidden = false; $('attTag').textContent = '— المحاولة ' + a.no; $('prm').value = a.prompt;
-  draw(a.plan, []); document.querySelectorAll('input[name=vd]').forEach((r) => { r.checked = r.value === a.verdict; });
-  $('srcView').textContent = S.source; hist();
+function grow() { const t = $('in'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, innerHeight * 0.42) + 'px'; }
+
+// ---------------------------------------------------------------- إرسال
+function send() {
+  const raw = $('in').value; if (!raw.trim()) return;
+  const sp = PTL.splitInput(raw);
+  if (sp.source) {
+    if (sp.source.length < MIN || sp.source.length > MAX) return toast('نص المصدر يجب أن يكون بين ' + MIN + ' و' + MAX + ' حرف.');
+    S.source = sp.source; srcUI();
+  }
+  if (!S.source) return toast('الصق محضر الاجتماع في الصندوق مع تعليماتك، أو استخدم «إضافة مصدر».');
+  if (!sp.prompt) { $('in').value = ''; grow(); preview(); return note('تم حفظ المصدر (' + lineCount(S.source) + ' سطراً). اكتب تعليماتك الآن.'); }
+  if (sp.prompt.length < 2 || sp.prompt.length > 4000) return toast('التعليمات يجب أن تكون بين 2 و4000 حرف.');
+  const no = S.attempts.length + 1, source = S.source, analysis = PTL.analyze(sp.prompt), truth = PTL.parseMeeting(source);
+  const plan = sim.run(truth, analysis, source, hash(source + '|' + sp.prompt + '|' + no));
+  const a = { no, prompt: sp.prompt, source, analysis, plan, improved: PTL.improve(sp.prompt, analysis, plan.errors), evaluated: false, revealed: false, verdict: null, n: {} };
+  S.attempts.push(a);
+  $('in').value = ''; grow(); preview();
+  push(userNode(a)); const ai = aiNode(a); thread.append(ai); ai.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-function draw(plan, errs) {
-  const box = clear($('out')); box.classList.toggle('allbad', errs.some((e) => e.unit_id === '*'));
+
+function userNode(a) {
+  a.n.src = el('pre', { class: 'source', text: a.source });
+  a.n.det = el('details', {}, el('summary', { text: 'المصدر المرفق · ' + lineCount(a.source) + ' سطراً' }), a.n.src);
+  return el('div', { class: 'msg user' }, el('div', { class: 'bub', text: a.prompt }), a.n.det);
+}
+function aiNode(a) {
+  const n = a.n;
+  n.out = el('div', { class: 'out' }); n.pan = el('div', { class: 'pan' });
+  const vd = 'vd' + a.no;
+  const radios = [['correct', 'صحيحة'], ['wrong', 'فيها أخطاء'], ['unsure', 'لست متأكداً']].map(([v, l]) => el('label', {}, el('input', { type: 'radio', name: vd, value: v, onchange: () => { a.verdict = v; } }), ' ' + l));
+  n.root = el('div', { class: 'msg ai' },
+    el('div', { class: 'head' }, el('h2', { text: 'نتيجة النموذج — محاولة ' + a.no }), el('span', { class: 'tag sim', text: 'محاكاة محلية — ليست نموذجاً لغوياً' })),
+    n.out, el('fieldset', {}, el('legend', { text: 'هل ترى هذه النتيجة صحيحة؟ (قرارك قبل الكشف)' }), radios),
+    el('div', { class: 'row' },
+      el('button', { type: 'button', onclick: () => retry(a) }, 'محاولة أخرى'),
+      el('button', { class: 'reveal', type: 'button', onclick: () => guard(() => reveal(a)) }, 'كشف الأخطاء'),
+      el('button', { type: 'button', onclick: () => guard(() => evaluate(a)) }, 'تقييم البرومبت'),
+      el('button', { type: 'button', onclick: () => guard(() => improveNow(a)) }, 'تحسين البرومبت')),
+    n.pan);
+  draw(a, []); return n.root;
+}
+const guard = (f) => { try { f(); } catch (e) { toast('حدث خطأ: ' + e.message); } };
+function retry(a) { $('in').value = a.prompt; grow(); preview(); $('in').focus(); toast('عدّل التعليمات ثم أرسل؛ المصدر الحالي محفوظ وتُسجَّل محاولة جديدة منفصلة.'); }
+
+function draw(a, errs) {
+  const plan = a.plan, box = clear(a.n.out); box.classList.toggle('allbad', errs.some((e) => e.unit_id === '*'));
   const by = {}; errs.forEach((e, i) => { if (e.unit_id && e.unit_id !== '*') (by[e.unit_id] ||= []).push(i + 1); });
   if (!plan.units.length) return box.append(el('p', { text: plan.text }));
-  const tags = (u) => (by[u.id] || []).map((n) => el('span', { class: 'n', text: '#' + n }));
+  const tags = (u) => (by[u.id] || []).map((x) => el('span', { class: 'n', text: '#' + x }));
   if (plan.style === 'prose') plan.units.forEach((u) => box.append(el('p', { class: by[u.id] ? 'bad' : null }, u.cells[0], tags(u))));
   else box.append(el('table', {}, el('thead', {}, el('tr', {}, plan.headers.map((h) => el('th', { text: h })))),
     el('tbody', {}, plan.units.map((u) => el('tr', { class: by[u.id] ? 'bad' : null }, u.cells.map((c, i) => el('td', {}, c, i === 1 ? tags(u) : null)))))));
@@ -643,84 +741,85 @@ function draw(plan, errs) {
 }
 const dimRow = (d) => { const b = el('i'); b.style.width = Math.round(d.level * 100) + '%'; return el('li', { class: d.status }, el('div', {}, el('b', { text: d.label }), ' — ' + Math.round(d.level * 100) + '%'), el('div', { class: 'bar' }, b), el('small', { text: d.detail })); };
 const adds = (list) => list.length ? el('ul', {}, list.map((x) => el('li', {}, el('b', { text: x.label + ': ' }), x.clause, x.prevents.length ? el('small', { class: 'muted', text: ' (يمنع: ' + x.prevents.join('، ') + ')' }) : null))) : null;
+const slot = (a, k) => { if (!a.n[k]) { a.n[k] = el('section'); a.n.pan.append(a.n[k]); } return clear(a.n[k]); };
 
-function evaluate() {
-  const a = need(); a.evaluated = true; const r = a.analysis, p = clear($('evP')); p.hidden = false;
-  p.append(el('h2', { text: 'تقييم اكتمال البرومبت' }),
+function evaluate(a) {
+  a.evaluated = true; const r = a.analysis, p = slot(a, 'ev');
+  p.append(el('h3', { text: 'تقييم اكتمال البرومبت' }),
     el('div', { class: 'score' }, el('b', { text: r.score + ' / 100' }), el('span', { class: 'tag', text: r.mode === 'precise' ? 'التنفيذ الدقيق' : 'محاكاة استغلال الثغرات' })),
     el('ul', { class: 'dims' }, Object.values(r.dimensions).map(dimRow)),
     r.gaps.length ? el('div', {}, el('h3', { text: 'الثغرات القابلة للاستغلال' }), el('ul', {}, r.gaps.map((g) => el('li', {}, el('b', { text: r.dimensions[g].label + ': ' }), PTL.DIMENSIONS[g].gap)))) : el('p', { text: 'لم تُرصد ثغرات جوهرية في التعليمات.' }),
     el('p', { class: 'hint', text: 'تقييم آلي تقريبي يعتمد على قواعد لغوية؛ قد يخطئ مع الصياغات غير المألوفة.' }));
-  hist(); p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  compare(a); p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-function improveNow() {
-  const a = need(), r = a.revealed ? a.improved : PTL.improve(a.prompt, a.analysis, []), p = clear($('impP')); p.hidden = false;
-  p.append(el('h2', { text: 'البرومبت المحسّن' }), el('div', { class: 'box', text: r.prompt }), adds(r.additions) || el('p', { text: 'لا إضافات مقترحة.' }),
-    el('div', { class: 'row' }, el('button', { class: 'main', type: 'button', onclick: () => { $('prm').value = r.prompt; $('prm').focus(); toast('وُضع في حقل التعليمات. اضغط «تنفيذ التعليمات».'); } }, 'استخدمه في المحاولة التالية')));
+function improveNow(a) {
+  const r = a.revealed ? a.improved : PTL.improve(a.prompt, a.analysis, []), p = slot(a, 'imp');
+  p.append(el('h3', { text: 'البرومبت المحسّن' }), el('div', { class: 'box', text: r.prompt }), adds(r.additions) || el('p', { text: 'لا إضافات مقترحة.' }),
+    el('div', { class: 'row' }, el('button', { class: 'main', type: 'button', onclick: () => { $('in').value = r.prompt; grow(); preview(); $('in').focus(); toast('وُضع في الصندوق. اضغط إرسال؛ المصدر الحالي محفوظ.'); } }, 'استخدمه في المحاولة التالية')));
   p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-function reveal() {
-  const a = need(), v = document.querySelector('input[name=vd]:checked'); if (v) a.verdict = v.value;
-  a.revealed = a.evaluated = true; const pl = a.plan, errs = pl.errors; draw(pl, errs);
-  const p = clear($('revP')), s = pl.stats; p.hidden = false;
-  p.append(el('h2', { text: 'كشف الأخطاء' }));
+function reveal(a) {
+  const v = a.n.root.querySelector('input[name=vd' + a.no + ']:checked'); if (v) a.verdict = v.value;
+  a.revealed = a.evaluated = true; const pl = a.plan, errs = pl.errors, s = pl.stats; draw(a, errs);
+  const p = slot(a, 'rv'); p.append(el('h3', { text: 'كشف الأخطاء' }));
   if (a.verdict && a.verdict !== 'unsure') { const ok = (a.verdict === 'wrong') === errs.length > 0; p.append(el('p', { class: 'meta', text: ok ? '✔ حكمك قبل الكشف كان متوافقاً مع الواقع.' : '✘ حكمك قبل الكشف لم يكن متوافقاً مع الواقع، وهذا ما يتدرب عليه المختبر.' })); }
   p.append(el('p', { class: 'meta', text: 'بنود صحيحة: ' + s.rows_correct + ' من ' + s.rows_expected + ' متوقعة (' + s.accuracy_percent + '%) — أخطاء مسجلة: ' + s.error_count }));
   if (!errs.length) p.append(el('div', { class: 'err' }, el('b', { text: pl.no_error_note })));
-  errs.forEach((e, i) => p.append(errCard(e, i + 1)));
+  errs.forEach((e, i) => p.append(errCard(a, e, i + 1)));
   if (pl.omitted.length) p.append(el('h3', { text: 'المعلومات المحذوفة' }), el('ul', {}, pl.omitted.map((o) => el('li', { text: '[' + (o.category || '') + '] ' + o.text }))));
   if (pl.assumptions.length) p.append(el('h3', { text: 'الافتراضات المضافة من خارج المصدر' }), el('ul', {}, pl.assumptions.map((o) => el('li', { text: o.value + (o.for ? ' ← ' + o.for : '') }))));
   p.append(el('h3', { text: 'الإجابة الصحيحة المستندة إلى المصدر' }), el('div', { class: 'out' }, el('table', {}, el('thead', {}, el('tr', {}, pl.correct.headers.map((h) => el('th', { text: h })))), el('tbody', {}, pl.correct.units.map((u) => el('tr', {}, u.cells.map((c) => el('td', { text: c }))))))));
   p.append(el('h3', { text: 'البرومبت المحسّن الذي كان يمنع الخطأ' }), el('div', { class: 'box', text: a.improved.prompt }), adds(a.improved.additions),
-    el('div', { class: 'row' }, el('button', { class: 'main', type: 'button', onclick: () => { $('prm').value = a.improved.prompt; $('prm').focus(); toast('وُضع في حقل التعليمات.'); } }, 'جرّبه في محاولة جديدة')));
-  hist(); p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    el('div', { class: 'row' }, el('button', { class: 'main', type: 'button', onclick: () => { $('in').value = a.improved.prompt; grow(); preview(); $('in').focus(); toast('وُضع في الصندوق.'); } }, 'جرّبه في محاولة جديدة')));
+  compare(a); p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
-function errCard(e, n) {
+function errCard(a, e, n) {
   const ev = e.source_evidence.length ? e.source_evidence.map((q) => el('blockquote', { text: q })) : [el('p', { text: 'لا يوجد في المصدر ما يدعم هذا البند.' })];
   return el('div', { class: 'err' }, el('header', {}, el('span', { text: '#' + n + ' ' + e.label }), el('span', { class: 'tag', text: e.fabricated ? 'مضاف من خارج المصدر' : 'تحريف لما في المصدر' })),
     el('div', { class: 'cmp' }, el('div', { class: 'a' }, el('h4', { text: 'ما قاله النموذج' }), el('div', { text: e.claim })), el('div', { class: 'b' }, el('h4', { text: e.evidence_from === 'prompt' ? 'ما في البرومبت' : 'ما في المصدر' }), ...ev)),
     el('p', { class: 'meta' }, el('b', { text: 'الصحيح: ' }), e.correct_value), el('p', { class: 'meta' }, el('b', { text: 'لماذا أمكن الخطأ: ' }), e.explanation),
-    e.source_evidence.length ? el('div', { class: 'row' }, el('button', { class: 'sm', type: 'button', onclick: () => mark(e.source_evidence) }, 'أظهر في المصدر')) : null);
+    e.source_evidence.length ? el('div', { class: 'row' }, el('button', { class: 'sm', type: 'button', onclick: () => mark(a, e.source_evidence) }, 'أظهر في المصدر')) : null);
 }
-function mark(quotes) {
-  const t = S.source, sp = []; quotes.forEach((q) => { const i = t.indexOf(q); if (i >= 0) sp.push([i, i + q.length]); }); sp.sort((a, b) => a[0] - b[0]);
-  const v = clear($('srcView')); let pos = 0, first = null;
+function mark(a, quotes) {
+  const t = a.source, sp = []; quotes.forEach((q) => { const i = t.indexOf(q); if (i >= 0) sp.push([i, i + q.length]); }); sp.sort((x, y) => x[0] - y[0]);
+  const v = clear(a.n.src); let pos = 0, first = null;
   sp.forEach(([s, e]) => { if (s < pos) return; v.append(document.createTextNode(t.slice(pos, s))); const m = el('mark', { text: t.slice(s, e) }); first ||= m; v.append(m); pos = e; });
-  v.append(document.createTextNode(t.slice(pos))); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  v.append(document.createTextNode(t.slice(pos))); a.n.det.open = true; a.n.det.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
-function hist() {
-  $('hist').hidden = !S.attempts.length; const ol = clear($('hl'));
-  S.attempts.forEach((a) => ol.append(el('li', { class: a === S.cur ? 'cur' : null }, el('b', { text: 'محاولة ' + a.no }), el('span', { class: 'sn', text: a.prompt }),
-    el('span', { class: 'muted', text: [a.evaluated ? 'الدرجة ' + a.analysis.score : '', a.revealed ? 'الأخطاء ' + a.plan.errors.length : ''].filter(Boolean).join(' — ') }), el('button', { class: 'sm', type: 'button', onclick: () => show(a) }, 'عرض'))));
-  const box = clear($('cmp')), n = S.attempts.length; box.hidden = n < 2; if (n < 2) return;
-  const o = S.attempts[n - 2], c = S.attempts[n - 1]; box.append(el('b', { text: 'مقارنة المحاولة ' + o.no + ' بالمحاولة ' + c.no }));
-  if (o.evaluated && c.evaluated) {
-    const d = c.analysis.score - o.analysis.score; box.append(el('p', { class: d >= 0 ? 'up' : 'down', text: 'الدرجة: ' + o.analysis.score + ' ← ' + c.analysis.score + ' (' + (d >= 0 ? '+' : '') + d + ')' }));
-    const ch = Object.keys(c.analysis.dimensions).map((k) => [c.analysis.dimensions[k].label, Math.round((c.analysis.dimensions[k].level - o.analysis.dimensions[k].level) * 100)]).filter((x) => x[1]);
+function compare(a) {
+  if (a.no < 2) return; const o = S.attempts[a.no - 2], box = slot(a, 'cmp');
+  box.append(el('h3', { text: 'مقارنة المحاولة ' + o.no + ' بالمحاولة ' + a.no }));
+  if (o.source !== a.source) box.append(el('p', { class: 'hint', text: 'تنبيه: المصدر تغيّر بين المحاولتين.' }));
+  if (o.evaluated && a.evaluated) {
+    const d = a.analysis.score - o.analysis.score; box.append(el('p', { class: d >= 0 ? 'up' : 'down', text: 'الدرجة: ' + o.analysis.score + ' ← ' + a.analysis.score + ' (' + (d >= 0 ? '+' : '') + d + ')' }));
+    const ch = Object.keys(a.analysis.dimensions).map((k) => [a.analysis.dimensions[k].label, Math.round((a.analysis.dimensions[k].level - o.analysis.dimensions[k].level) * 100)]).filter((x) => x[1]);
     if (ch.length) box.append(el('ul', {}, ch.map(([l, v]) => el('li', { class: v > 0 ? 'up' : 'down', text: l + ': ' + (v > 0 ? '+' : '') + v + '%' }))));
   }
-  if (o.revealed && c.revealed) box.append(el('p', { text: 'الأخطاء: ' + o.plan.errors.length + ' ← ' + c.plan.errors.length }));
-  if (!(o.evaluated && c.evaluated && o.revealed && c.revealed)) box.append(el('p', { class: 'hint', text: 'اضغط «تقييم البرومبت» و«كشف الأخطاء» للمحاولتين لتظهر المقارنة كاملة.' }));
+  if (o.revealed && a.revealed) box.append(el('p', { text: 'الأخطاء: ' + o.plan.errors.length + ' ← ' + a.plan.errors.length }));
+  if (!(o.evaluated && a.evaluated && o.revealed && a.revealed)) box.append(el('p', { class: 'hint', text: 'اضغط «تقييم البرومبت» و«كشف الأخطاء» للمحاولتين لتظهر المقارنة كاملة.' }));
 }
-const need = () => { if (!S.cur) { toast('نفّذ محاولة أولاً.'); throw new Error('no attempt'); } return S.cur; };
-const guard = (f) => () => { try { f(); } catch (e) { if (e.message !== 'no attempt') toast('حدث خطأ: ' + e.message); } };
 
-// setup
-const cnt = () => { $('srcCount').textContent = '(' + $('srcTxt').value.length + ' / 20000)'; };
-const syncSrc = () => { const s = $('srcSel').value === 'sample'; $('srcTxt').readOnly = s; if (s) $('srcTxt').value = SAMPLE; else if ($('srcTxt').value === SAMPLE) $('srcTxt').value = ''; cnt(); };
-$('newBtn').addEventListener('click', () => { $('setup').hidden = false; syncSrc(); $('setup').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); });
-$('cancelBtn').addEventListener('click', () => { $('setup').hidden = true; });
-$('srcSel').addEventListener('change', syncSrc); $('srcTxt').addEventListener('input', cnt);
-$('startBtn').addEventListener('click', () => {
-  const sample = $('srcSel').value === 'sample', t = sample ? SAMPLE : $('srcTxt').value.trim();
-  if (t.length < 40 || t.length > 20000) return toast('نص المصدر يجب أن يكون بين 40 و20000 حرف.');
-  begin(sample ? 'محضر تجريبي' : 'محضر مخصص', t);
+// ---------------------------------------------------------------- تعديل المصدر
+const cnt = () => { $('srcCount').textContent = '(' + $('srcTxt').value.length + ' / ' + MAX + ')'; };
+$('srcEditBtn').addEventListener('click', () => { const ed = $('srcEd'); ed.hidden = !ed.hidden; if (!ed.hidden) { $('srcTxt').value = S.source; cnt(); $('srcTxt').focus(); } });
+$('srcCancel').addEventListener('click', () => { $('srcEd').hidden = true; });
+$('srcTxt').addEventListener('input', cnt);
+$('srcSave').addEventListener('click', () => {
+  const v = $('srcTxt').value.trim();
+  if (v.length < MIN || v.length > MAX) return toast('نص المصدر يجب أن يكون بين ' + MIN + ' و' + MAX + ' حرف.');
+  const changed = v !== S.source; S.source = v; srcUI(); $('srcEd').hidden = true;
+  if (changed) note('تم تحديث المصدر (' + lineCount(v) + ' سطراً). المحاولات السابقة تحتفظ بالمصدر الذي نُفّذت عليه.');
 });
-['ex1', 'ex2', 'ex3'].forEach((k) => $(k).addEventListener('click', () => { $('prm').value = EX[k]; $('prm').focus(); }));
-$('runBtn').addEventListener('click', guard(run)); $('evBtn').addEventListener('click', guard(evaluate));
-$('impBtn').addEventListener('click', guard(improveNow)); $('revBtn').addEventListener('click', guard(reveal));
-$('retryBtn').addEventListener('click', () => { ['evP', 'impP', 'revP'].forEach((i) => { $(i).hidden = true; }); $('srcView').textContent = S.source; $('prm').focus(); toast('عدّل التعليمات ثم اضغط «تنفيذ التعليمات»؛ تُسجَّل محاولة جديدة منفصلة.'); });
 
-begin('محضر تجريبي', SAMPLE);
+// ---------------------------------------------------------------- ربط
+$('send').addEventListener('click', () => guard(send));
+$('in').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); guard(send); } });
+$('in').addEventListener('input', () => { grow(); preview(); });
+['ex1', 'ex2', 'ex3'].forEach((k) => $(k).addEventListener('click', () => { $('in').value = SAMPLE + '\n\n' + EX[k]; grow(); preview(); $('in').focus(); }));
+$('newBtn').addEventListener('click', () => {
+  S.source = ''; S.attempts = []; clear(thread); $('in').value = ''; grow(); preview(); srcUI(); $('srcEd').hidden = true;
+  thread.append(el('div', { class: 'welcome', id: 'welcome' }, el('h2', { text: 'محادثة جديدة' }), el('p', { text: 'الصق المحضر وتعليماتك في الصندوق أدناه.' })));
+});
+srcUI(); grow();
 })();
 </script>

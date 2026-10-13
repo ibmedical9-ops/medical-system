@@ -454,6 +454,44 @@ function improve(prompt, analysis, errors = []) {
   return { prompt: text.trim(), additions };
 }
 
-return { Text, Rng, parseMeeting, analyze, Simulator, improve, DIMENSIONS };
+
+// ---------------------------------------------------------------- فصل المحضر عن التعليمات (صندوق إدخال واحد)
+// قاعدة: السطر «تسمية: كلام» يُعدّ من المحضر إن كانت التسمية عنواناً معروفاً (الحضور/التاريخ...) أو اسم متحدث
+// (وارداً في «الحضور» أو متكرراً أو، عند غياب ذلك، تسميات قصيرة متعددة). الفقرات (يفصلها سطر فارغ) ذات الأغلبية من هذه الأسطر
+// تذهب إلى المحضر وما عداها إلى التعليمات. سطر --- أو === يحدد الفصل صراحةً ويتفوق على التخمين.
+function splitInput(raw) {
+  const text = String(raw || '').replace(/\r\n?/g, '\n').trim();
+  if (!text) return { source: '', prompt: '', how: 'empty' };
+  const lines = text.split('\n');
+  const labelOf = (l) => { const m = /^\s*([^:：\n]{1,30})[:：]\s*(\S.*)?$/u.exec(l); if (!m) return null; const lab = m[1].trim(); return lab.split(/\s+/).length > 3 ? null : { lab, rest: m[2] || '' }; };
+  const hdr = HEADERS.map(Text.norm), att = ['الحضور', 'المشاركون', 'المشاركين'].map(Text.norm);
+  const counts = {}, known = new Set();
+  for (const l of lines) {
+    const x = labelOf(l); if (!x) continue; const n = Text.norm(x.lab);
+    if (hdr.includes(n)) { if (att.includes(n)) x.rest.split(/\s*[،,;؛]\s*|\s+و(?=\s)\s*/u).forEach((a) => { const t = Text.norm(a.trim()); if (t) known.add(t.split(' ')[0]); }); }
+    else counts[n] = (counts[n] || 0) + 1;
+  }
+  for (const [k, v] of Object.entries(counts)) if (v >= 2) known.add(k.split(' ')[0]);
+  if (!known.size && Object.keys(counts).length >= 2) for (const k of Object.keys(counts)) if (k.split(' ').length <= 2 && k.length <= 14) known.add(k.split(' ')[0]);
+  const isSrc = (l) => { const x = labelOf(l); if (!x) return false; const n = Text.norm(x.lab); return hdr.includes(n) || known.has(n) || known.has(n.split(' ')[0]); };
+  const frac = (blk) => { const ls = blk.split('\n').filter((l) => l.trim()); return ls.length ? ls.filter(isSrc).length / ls.length : 0; };
+  const di = lines.findIndex((l) => /^\s*(?:-{3,}|={3,}|#{3,}|\*{3,})\s*$/.test(l));
+  if (di >= 0) {
+    const a = lines.slice(0, di).join('\n').trim(), b = lines.slice(di + 1).join('\n').trim();
+    return frac(a) >= frac(b) ? { source: a, prompt: b, how: 'delimiter' } : { source: b, prompt: a, how: 'delimiter' };
+  }
+  const src = [], prm = [];
+  for (const para of text.split(/\n\s*\n/)) {
+    const ls = para.split('\n').filter((l) => l.trim());
+    if (!ls.length) continue;
+    if (ls.filter(isSrc).length / ls.length >= 0.5) {
+      let a = 0, b = ls.length; while (a < b && !isSrc(ls[a])) a++; while (b > a && !isSrc(ls[b - 1])) b--;
+      if (a > 0) prm.push(ls.slice(0, a).join('\n')); src.push(ls.slice(a, b).join('\n')); if (b < ls.length) prm.push(ls.slice(b).join('\n'));
+    } else prm.push(ls.join('\n'));
+  }
+  return { source: src.join('\n\n'), prompt: prm.join('\n').trim(), how: src.length ? 'auto' : 'none' };
+}
+
+return { Text, Rng, parseMeeting, analyze, Simulator, improve, DIMENSIONS, splitInput };
 })();
 if (typeof module !== 'undefined') module.exports = PTL;
